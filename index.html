@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07121e">
+<title>Ruta Ágil</title>
+<style>
+:root{--ink:#07121e;--panel:#0e2233;--panel2:#123a57;--line:rgba(215,224,231,.18);--line2:#3b5a73;--txt:#f4f7fa;--sub:#b4c3cf;--signal:#7fb5d6;--gold:#e0b93a;--ok:#4fc79a;--danger:#f0637a}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--ink);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:17px;line-height:1.35}
+body{background:radial-gradient(520px 340px at 10% -6%,#123a57 0%,rgba(18,58,87,0) 70%),var(--ink);background-attachment:fixed}
+#app{max-width:520px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom));min-height:100vh;display:flex;flex-direction:column}
+.hilo{height:3px;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--signal));margin-bottom:14px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;color:var(--sub);margin-bottom:12px}
+.top b{color:var(--gold);font-size:18px}
+.tag{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--signal);margin-bottom:6px}
+h1{font-size:30px;line-height:1.12;letter-spacing:-.01em;margin-bottom:10px}
+h2{font-size:23px;line-height:1.18;margin-bottom:8px}
+.sub{color:var(--sub);margin-bottom:14px}
+.sit{font-size:18px;margin-bottom:14px}
+.btn{display:block;width:100%;min-height:54px;border:0;border-radius:12px;background:var(--gold);color:#0a2338;font:inherit;font-size:18px;font-weight:700;padding:12px;cursor:pointer}
+.btn:disabled{opacity:.35}
+.btn.alt{background:transparent;border:1.5px solid var(--line2);color:var(--txt);font-weight:600}
+.fin{margin-top:auto;padding-top:16px}
+input[type=text],textarea{width:100%;padding:14px;border-radius:12px;border:1.5px solid var(--line2);background:var(--panel);color:var(--txt);font:inherit;font-size:18px}
+input[type=text]:focus,textarea:focus{outline:2px solid var(--gold);border-color:transparent}
+.op{display:block;width:100%;text-align:left;padding:14px;margin-bottom:10px;border-radius:12px;border:1.5px solid var(--line2);background:var(--panel);color:var(--txt);font:inherit;cursor:pointer;min-height:52px}
+.op.on{border-color:var(--gold);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--gold)}
+.op small{display:block;color:var(--sub);font-size:14px;margin-top:2px}
+.op .hr{float:right;font-weight:700;color:var(--gold);margin-left:10px}
+.op:disabled{opacity:.4}
+.op.tacha.on{text-decoration:line-through;border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger);color:var(--sub)}
+.papel .op{background:#f4efe2;color:#10202e;border-color:#cdbf9f;border-radius:6px;font-family:Georgia,serif;margin-bottom:6px}
+.papel .op.on{background:#ffd9df;border-color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}
+.num{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--gold);color:#0a2338;align-items:center;justify-content:center;font-weight:800;font-size:15px;margin-right:8px;float:left}
+.prog{height:6px;background:var(--panel);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.prog i{display:block;height:100%;background:var(--gold);transition:width .25s}
+.tarj{background:var(--panel2);border:1.5px solid var(--line2);border-radius:14px;padding:18px;font-size:19px;font-weight:600;margin-bottom:14px;min-height:112px}
+.num-g{font-size:64px;font-weight:800;text-align:center;color:var(--gold);line-height:1}
+input[type=range]{width:100%;height:44px;accent-color:var(--gold)}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.fila span{flex:1}
+.fila b{min-width:42px;text-align:center;font-size:20px}
+.pm{width:46px;height:46px;border-radius:10px;border:1.5px solid var(--line2);background:var(--panel2);color:var(--txt);font-size:24px;font-weight:700}
+.suma{font-weight:700;margin:12px 0;text-align:center;font-size:18px}
+.suma.mal{color:var(--danger)}.suma.bien{color:var(--ok)}
+.barra{height:14px;border-radius:7px;background:var(--panel);border:1px solid var(--line2);overflow:hidden;margin:6px 0 14px}
+.barra i{display:block;height:100%;background:var(--gold);transition:width .2s}
+.pts{font-size:46px;font-weight:800;color:var(--gold);line-height:1;margin-bottom:6px}
+.por{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.det{list-style:none;margin:10px 0}
+.det li{padding:8px 0 8px 28px;border-bottom:1px solid var(--line);position:relative;font-size:16px}
+.det li:before{content:"✓";position:absolute;left:4px;font-weight:800;color:var(--ok)}
+.det li.no:before{content:"✕";color:var(--danger)}
+.det small{display:block;color:var(--signal)}
+.carta{border:1.5px solid var(--gold);border-radius:14px;padding:16px;background:linear-gradient(160deg,#123a57,#0e2233);margin:12px 0}
+.carta .pn{font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--gold)}
+.carta h3{font-size:21px;margin:4px 0 8px}
+.carta q{display:block;quotes:none;font-style:italic;color:var(--sub);font-size:15px;margin-bottom:8px}
+.alb{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 18px}
+.ti{aspect-ratio:1;border-radius:10px;border:1.5px solid var(--line2);background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--line2);cursor:pointer;font-family:inherit}
+.ti.dis{color:var(--signal);border-color:var(--signal)}
+.ti.hecho{background:var(--gold);border-color:var(--gold);color:#0a2338}
+.pulso{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ok);margin-right:8px;animation:p 1.6s infinite}
+.pulso.mal{background:var(--danger);animation:none}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.leg{font-size:13px;color:var(--sub);margin-top:14px}
+.aviso{font-size:13px;color:#ffe9a8;margin-bottom:10px}
+.lp{margin:6px 0 16px}
+.lp li{list-style:none;padding:9px 0;border-bottom:1px solid var(--line)}
+.lp b{color:var(--gold)}
+.modal{position:fixed;inset:0;background:rgba(3,8,14,.9);display:flex;align-items:center;padding:16px;z-index:9}
+.modal>div{max-width:488px;margin:0 auto;width:100%}
+.oculto{display:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API = 'https://escala-iactivate-n8n.x3k97m.easypanel.host/webhook/ruta-agil', DATOS = {"retos":[{"id":"E","tipo":"voto","tag":"Votación de entrada","titulo":"¿Qué hace más ágil a una auditoría?","opciones":[{"t":"Terminarla en menos días"},{"t":"Producir antes información útil sobre los riesgos prioritarios"}],"por":"Volvemos a esta misma pregunta al final."},{"id":"A","tipo":"clasifica","tag":"Qué es el agilismo","titulo":"¿Ágil, rápido o improvisado?","instr":"Toca la palabra que describe cada situación.","grupos":["Ágil","Rápido","Improvisado"],"items":[{"t":"Para cerrar el viernes, bajamos la muestra de 60 a 15 sin documentar por qué.","g":1},{"t":"Aparece un cambio de cuenta en un pago grande: sacamos una prueba, registramos, pedimos aprobación y ejecutamos.","g":0},{"t":"Hacemos hoy la prueba nueva y después vemos quién la aprueba.","g":2},{"t":"En la semana 2 enviamos una alerta con estado, limitación y evidencia pendiente.","g":0}],"por":"Rápido es el mismo plan con menos tiempo o menos rigor. Improvisado es cambiar sin criterio ni registro. Ágil es cambiar el orden con criterio, registro y aprobación."},{"id":"V","tipo":"clasifica","tag":"Cuatro valores","titulo":"¿Buena o mala traducción a auditoría?","instr":"Clasifica cada frase.","grupos":["Buena","Mala"],"items":[{"t":"Reunión de diez minutos y constancia de lo aclarado.","g":0},{"t":"Hablamos y no hace falta dejar constancia.","g":1},{"t":"Acordamos el hallazgo con el auditado.","g":1},{"t":"Si el riesgo cambia de verdad, repriorizamos con registro y aprobación.","g":0}],"por":"El Manifiesto dice «sobre», no «en vez de». Procesos, documentación y plan siguen valiendo; lo de la izquierda vale más."},{"id":"P1","n":1,"tipo":"elige","tag":"Principio 1","titulo":"Semana 3 de 12","situacion":"Tienes un resultado sustentado: cuentas bancarias cambiadas sin verificación independiente, y los pagos siguen saliendo. ¿Qué haces?","opciones":[{"t":"Lo guardo para el informe final de la semana 12."},{"t":"Comunico ya un avance sustentado al responsable, con su estado y limitaciones.","ok":true},{"t":"Lo declaro hallazgo definitivo hoy para no perder tiempo."}],"por":"El valor está en llegar cuando todavía se puede decidir. Un avance sustentado no reemplaza el informe final ni es un hallazgo definitivo."},{"id":"P2","n":2,"tipo":"ordena","tag":"Principio 2","titulo":"Llegó un riesgo nuevo en la semana 5","instr":"Toca los pasos en el orden correcto.","items":["Evaluar si cambia el riesgo, el objetivo o el alcance","Registrar el motivo y el impacto","Obtener la aprobación de quien corresponde","Ajustar el plan y ejecutar"],"por":"Primero se evalúa, luego se registra, se aprueba y solo entonces se mueve el trabajo. Esa es la diferencia entre agilidad e improvisación."},{"id":"P3","n":3,"tipo":"desliza","tag":"Principio 3","titulo":"Auditoría de 12 semanas","situacion":"¿Cada cuántas semanas mostrarías un resultado terminado y revisable?","min":1,"max":12,"unidad":"semanas","ok":[1,3],"medio":[4,6],"por":"Mientras más corto el ciclo, más ocasiones de corregir el rumbo. Dos semanas es una referencia, no una norma."},{"id":"P4","n":4,"tipo":"clasifica","tag":"Principio 4","titulo":"¿Colaboración o pérdida de objetividad?","instr":"Clasifica cada situación.","grupos":["Colaboración sana","Afecta la objetividad"],"items":[{"t":"Aclarar con el responsable cómo funciona un campo del sistema.","g":0},{"t":"Reunión semanal corta para destrabar solicitudes de información.","g":0},{"t":"Dejar que el auditado redacte la conclusión del hallazgo.","g":1},{"t":"Quitar una excepción porque el área dice que ya la va a corregir.","g":1}],"por":"El auditado aporta hechos y contexto. La conclusión es de Auditoría."},{"id":"P5","n":5,"tipo":"marca","tag":"Principio 5","titulo":"¿Qué es entorno y apoyo?","instr":"Marca las que de verdad ayudan a un equipo motivado.","items":[{"t":"Explicar el objetivo y el riesgo de cada prueba","ok":true},{"t":"Dar acceso a los datos a tiempo","ok":true},{"t":"Pedir aprobación para cada paso del día"},{"t":"Herramientas autorizadas para trabajar","ok":true},{"t":"Reportar cada tarea tres veces al día"}],"por":"Confiar no es abandonar: la supervisión se concentra en revisar resultados, no en vigilar tareas."},{"id":"P6","n":6,"tipo":"clasifica","tag":"Principio 6","titulo":"¿Conversación o documento formal?","instr":"Elige el canal para cada caso.","grupos":["Conversación con nota breve","Documento formal"],"items":[{"t":"Dos auditores leen distinto un criterio.","g":0},{"t":"Aclarar con Tecnología qué significa un campo.","g":0},{"t":"Requerimiento de información con plazo.","g":1},{"t":"Comunicación final del encargo.","g":1}],"por":"Para entender, hablamos. Para dejar constancia, escribimos. Si fue importante, hacemos las dos cosas."},{"id":"P7","n":7,"tipo":"elige","tag":"Principio 7","titulo":"Vas a reportar el avance","situacion":"¿Qué dato le dice mejor al comité cuánto ha avanzado la auditoría?","opciones":[{"t":"80 % de las horas consumidas"},{"t":"15 pruebas iniciadas"},{"t":"3 de 8 riesgos con conclusión soportada y revisada","ok":true},{"t":"120 papeles de trabajo creados"}],"por":"Las horas miden esfuerzo. Lo terminado y revisado mide resultado."},{"id":"P8","n":8,"tipo":"reparte","tag":"Principio 8","titulo":"Reparte las 40 horas de la semana","instr":"Que puedas repetir este ritmo todas las semanas. Deben sumar 40.","total":40,"partes":[{"t":"Ejecutar pruebas","v":16},{"t":"Documentar y revisar","v":8},{"t":"Coordinar con equipo y auditado","v":8},{"t":"Reserva para imprevistos","v":8}],"minimos":[0,8,0,4],"por":"Con al menos 8 horas para documentar y revisar y 4 de holgura, el plan se puede repetir. Sin holgura, el primer imprevisto lo rompe."},{"id":"P9","n":9,"tipo":"marca","tag":"Principio 9","titulo":"Revisa este papel de trabajo","instr":"Toca las dos líneas con falla.","papel":true,"items":[{"t":"Riesgo: pagos duplicados."},{"t":"Criterio: cada factura se paga una sola vez."},{"t":"Fuente: base de pagos de septiembre, sin validar si está completa.","ok":true},{"t":"Resultado: la herramienta marcó 12 candidatos."},{"t":"Conclusión: hay 12 pagos duplicados.","ok":true}],"por":"Sin validar la integridad no sabemos si la base está completa. Y 12 candidatos no son 12 duplicados: faltan el estado del pago y el soporte."},{"id":"P10","n":10,"tipo":"marca","tag":"Principio 10","titulo":"Tacha lo que sobra","instr":"Toca solo lo que se puede dejar de hacer.","tacha":true,"items":[{"t":"Reporte semanal repetido","ok":true},{"t":"Evidencia de la prueba"},{"t":"Tercer formato con los mismos datos","ok":true},{"t":"Revisión del supervisor"},{"t":"Reunión que repite el tablero","ok":true},{"t":"Registro de cambios"}],"por":"Se simplifica el desperdicio, nunca la evidencia, la revisión ni el registro."},{"id":"P11","n":11,"tipo":"clasifica","tag":"Principio 11","titulo":"¿Quién decide?","instr":"Asigna cada decisión.","grupos":["El equipo","Jefatura o supervisión"],"items":[{"t":"Cómo repartir las pruebas del ciclo entre dos auditores.","g":0},{"t":"En qué orden avanzar día a día dentro del ciclo.","g":0},{"t":"Aprobar un cambio al programa de trabajo.","g":1},{"t":"Revisar lo terminado.","g":1}],"por":"Autonomía dentro de límites claros: el equipo organiza, la jefatura aprueba y el supervisor revisa."},{"id":"P12","n":12,"tipo":"elige","tag":"Principio 12","titulo":"Fin del ciclo","situacion":"¿Cuál es una mejora real para el siguiente ciclo?","opciones":[{"t":"Comunicarnos mejor."},{"t":"Ser más proactivos con el auditado."},{"t":"Antes del próximo ciclo, el líder estandariza el requerimiento de datos con periodo y formato; se mide en días de respuesta.","ok":true}],"por":"Una mejora real dice qué cambia, quién lo hace, para cuándo y cómo se mide."},{"id":"C1","tipo":"capacidad","tag":"Misión Aurora · Backlog","titulo":"No podemos revisarlo todo","instr":"Tienen 10 horas. Elijan qué entra.","total":10,"caso":true,"items":[{"id":"A","t":"A · Cuenta cambiada menos de 48 h antes del pago","d":"7 casos · impacto 5 · probabilidad 4 · puntaje 20","h":4},{"id":"B","t":"B · Posibles pagos duplicados","d":"12 casos · 5 × 4 · puntaje 20","h":4},{"id":"C","t":"C · Autorización posterior al pago","d":"4 casos · 5 × 3 · puntaje 15","h":3},{"id":"D","t":"D · Pago próximo al umbral de aprobación","d":"28 casos · 4 × 3 · puntaje 12","h":3},{"id":"E","t":"E · Conciliación tardía","d":"43 casos · 3 × 3 · puntaje 9","h":2},{"id":"R","t":"Documentar y revisar lo que se haga","d":"Reserva para cierre","h":2}],"puntajes":{"ABR":100,"ACR":80,"BCR":60,"ACD":60,"AB":60,"ABE":50},"base":30,"por":"La opción más defendible es A y B, más 2 horas para documentar y revisar. El empate se rompe por recuperabilidad: un doble pago suele poder reclamarse; un pago desviado a una cuenta ajena es más difícil de recuperar. No hay una sola respuesta: se califica la justificación."},{"id":"C2","tipo":"construye","tag":"Misión Aurora · Sprint","titulo":"Diseña el ciclo de auditoría","instr":"Elige lo mejor en cada paso.","caso":true,"pasos":[{"t":"Objetivo","opciones":[{"t":"Revisar los pagos."},{"t":"Terminar seis tareas esta semana."},{"t":"Determinar con evidencia si los cambios de cuenta y posibles duplicados cumplieron los controles antes del desembolso.","ok":true}]},{"t":"Alcance","opciones":[{"t":"Señales A y B, pagos de septiembre, 8 horas más 2 de cierre.","ok":true},{"t":"Los 10.000 pagos, todos."},{"t":"Lo que alcance."}]},{"t":"Pruebas","opciones":[{"t":"Pedirle la explicación al área y dejarla como evidencia."},{"t":"Validar la verificación independiente y cruzar candidatos con estado del pago y soporte bancario.","ok":true},{"t":"Aceptar lo que marcó la alerta automática."}]},{"t":"Criterio de terminado","opciones":[{"t":"Prueba ejecutada."},{"t":"Papel cargado en la carpeta."},{"t":"Prueba ejecutada, evidencia trazable, excepciones evaluadas, conclusión y revisión.","ok":true}]}],"por":"Un ciclo tiene objetivo verificable, alcance limitado por capacidad, pruebas que producen evidencia y un criterio de terminado que incluye revisión."},{"id":"C3","tipo":"clasifica","tag":"Misión Aurora · Terminado","titulo":"¿Está terminado?","instr":"Clasifica cada tarea según la definición de terminado.","grupos":["Terminado","No terminado"],"caso":true,"items":[{"t":"T2: ejecutada, evidencia vinculada, conclusión escrita y revisión del supervisor hecha.","g":0},{"t":"T3: ejecutada, pero la evidencia no está vinculada.","g":1},{"t":"T1: bloqueada, Tecnología no entrega la bitácora.","g":1},{"t":"T4: con conclusión, pero el supervisor no la ha revisado.","g":1}],"por":"Hecho no es terminado. Terminado es: procedimiento ejecutado, evidencia trazable, excepciones evaluadas, conclusión y revisión."},{"id":"C4","tipo":"construye","tag":"Misión Aurora · El riesgo cambió","titulo":"Día 3: sobre rojo","instr":"Otra orden pendiente para el mismo beneficiario de P-104. La cuenta se modificó ayer, el pago sale mañana y no se ha localizado la verificación independiente.","caso":true,"pasos":[{"t":"¿Cambia la prioridad?","opciones":[{"t":"Sí: mismo beneficiario, riesgo alto y un día de plazo.","ok":true},{"t":"No, seguimos el plan."},{"t":"Lo vemos en el próximo ciclo."}]},{"t":"¿Qué se hace antes de ejecutar?","opciones":[{"t":"Meterla al ciclo sin sacar nada."},{"t":"Frenar el pago nosotros mismos."},{"t":"Registrar el evento, evaluar el impacto, tramitar la aprobación y sacar una tarea del ciclo.","ok":true}]},{"t":"¿Qué alerta se envía?","opciones":[{"t":"Se detectó un fraude por cambio irregular de cuenta."},{"t":"Alerta temprana: orden pendiente con cuenta modificada ayer; no se ha localizado la verificación independiente; no constituye conclusión definitiva.","ok":true},{"t":"Nada hasta terminar la prueba."}]}],"por":"Auditoría no frena el pago: eso es de la primera línea. Comunica el estado sin concluir de más y deja rastro del cambio."},{"id":"C5","tipo":"muro","tag":"Misión Aurora · Retrospectiva","titulo":"Una mejora para su próximo trabajo","instr":"Escriba una: qué cambia, quién lo hace y para cuándo. Sin nombres de personas ni datos reales.","ph":"Ej.: antes del próximo ciclo, el líder define el formato del requerimiento de datos","por":"La retrospectiva revisa el proceso, nunca las conclusiones."},{"id":"IA1","tipo":"clasifica","tag":"IA · Semáforo","titulo":"¿Verde, amarillo o rojo?","instr":"Clasifica cada uso de IA.","grupos":["Verde","Amarillo","Rojo"],"items":[{"t":"Explicar un concepto de auditoría con información pública.","g":0},{"t":"Generar ideas de pruebas con casos inventados.","g":0},{"t":"Mejorar la redacción de un texto completamente anonimizado.","g":1},{"t":"Pegar cuentas o cédulas de beneficiarios en una IA pública.","g":2},{"t":"Pedirle que determine «fraude sí o no».","g":2}],"por":"Verde: sin datos sensibles. Amarillo: con revisión. Rojo: datos reales en herramientas no autorizadas, decisiones de auditoría o la IA como evidencia única."},{"id":"IA2","tipo":"marca","tag":"IA · Validación humana","titulo":"Esto respondió una IA","instr":"Ejemplo preparado con errores a propósito. Toca lo que afirma sin sustento.","papel":true,"caso":true,"items":[{"t":"P-101 y P-102 son un doble pago confirmado.","ok":true},{"t":"P-101 y P-102 tienen la misma factura y el mismo valor."},{"t":"P-103 y P-107 también son doble pago por 34 millones.","ok":true},{"t":"P-104 evidencia un fraude por cambio de cuenta.","ok":true},{"t":"Recomiendo bloquear los pagos de ese beneficiario.","ok":true}],"por":"La segunda línea es un hecho de los datos. Las demás no se sostienen: sin soporte bancario no hay doble pago confirmado; P-107 está Rechazado, no ejecutado; nadie ha determinado fraude; y Auditoría no frena pagos. La IA redacta con seguridad aunque no tenga sustento."},{"id":"S","tipo":"voto","tag":"Votación de salida","titulo":"¿Qué hace más ágil a una auditoría?","opciones":[{"t":"Terminarla en menos días"},{"t":"Producir antes información útil sobre los riesgos prioritarios"}],"por":"Gracias por jugar."},{"id":"T","tipo":"muro","tag":"Compromiso","titulo":"¿Qué va a aplicar en su próximo trabajo?","instr":"Una sola práctica. Sin nombres de personas ni datos reales.","ph":"Ej.: limitar a dos las pruebas abiertas por auditor","por":"Ese es su primer paso. Sus doce principios quedan en este enlace."}],"principios":[{"n":1,"nombre":"Entregar valor temprano y de forma continua","corto":"Valor temprano","oficial":"Nuestra mayor prioridad es satisfacer al cliente mediante la entrega temprana y continua de software con valor.","simple":"Lo que ya sirve para decidir no se guarda para el final."},{"n":2,"nombre":"Aceptar el cambio, aunque llegue tarde","corto":"Aceptar el cambio","oficial":"Aceptamos que los requisitos cambien, incluso en etapas tardías del desarrollo. Los procesos Ágiles aprovechan el cambio para proporcionar ventaja competitiva al cliente.","simple":"Si el riesgo cambia, el plan puede cambiar, con criterio."},{"n":3,"nombre":"Entregar con frecuencia, en ciclos cortos","corto":"Ciclos cortos","oficial":"Entregamos software funcional frecuentemente, entre dos semanas y dos meses, con preferencia al periodo de tiempo más corto posible.","simple":"Partes pequeñas, terminadas y revisables, en vez de un bloque gigante."},{"n":4,"nombre":"Trabajar juntos, todos los días","corto":"Trabajar juntos","oficial":"Los responsables de negocio y los desarrolladores trabajamos juntos de forma cotidiana durante todo el proyecto.","simple":"El auditado no aparece solo al inicio y al final."},{"n":5,"nombre":"Confiar en personas motivadas","corto":"Personas motivadas","oficial":"Los proyectos se desarrollan en torno a individuos motivados. Hay que darles el entorno y el apoyo que necesitan, y confiarles la ejecución del trabajo.","simple":"El equipo necesita entender el para qué y tener con qué trabajar."},{"n":6,"nombre":"Conversar de frente","corto":"Conversación directa","oficial":"El método más eficiente y efectivo de comunicar información al equipo de desarrollo y entre sus miembros es la conversación cara a cara.","simple":"Las dudas se aclaran hablando, no con una cadena de correos."},{"n":7,"nombre":"Medir el avance con lo terminado","corto":"Medir lo terminado","oficial":"El software funcionando es la medida principal de progreso.","simple":"Avance es lo que ya está terminado y sirve, no lo que está ocupado."},{"n":8,"nombre":"Sostener un ritmo constante","corto":"Ritmo sostenible","oficial":"Los procesos Ágiles promueven el desarrollo sostenible. Los promotores, desarrolladores y usuarios debemos ser capaces de mantener un ritmo constante de forma indefinida.","simple":"Un ritmo que se pueda repetir, sin carreras de último momento."},{"n":9,"nombre":"Cuidar la excelencia técnica","corto":"Excelencia técnica","oficial":"La atención continua a la excelencia técnica y al buen diseño mejora la Agilidad.","simple":"La calidad no estorba a la agilidad: es lo que la hace posible."},{"n":10,"nombre":"Simplificar: no hacer lo que no aporta","corto":"Simplicidad","oficial":"La simplicidad, o el arte de maximizar la cantidad de trabajo no realizado, es esencial.","simple":"Dejar de hacer lo que nadie usa y que no aporta al objetivo."},{"n":11,"nombre":"Dar autonomía al equipo","corto":"Equipos autoorganizados","oficial":"Las mejores arquitecturas, requisitos y diseños emergen de equipos auto-organizados.","simple":"Quien hace el trabajo suele saber mejor cómo organizarlo."},{"n":12,"nombre":"Reflexionar y ajustar con regularidad","corto":"Reflexionar y ajustar","oficial":"A intervalos regulares el equipo reflexiona sobre cómo ser más efectivo para a continuación ajustar y perfeccionar su comportamiento en consecuencia.","simple":"Parar a pensar cómo trabajamos y cambiar una cosa concreta."}],"aviso":"Caso ficticio con fines didácticos. No describe operaciones, personas, políticas ni deficiencias de Fiduprevisora."};
+const R = DATOS.retos, P = DATOS.principios, AVISO = DATOS.aviso;
+const SES = new URLSearchParams(location.search).get('s') || 'curso';
+const CLAVE_LOCAL = 'rutaagil_' + SES;
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const porId = id => R.find(r => r.id === id);
+
+let memoria = null;
+function carga(){ try { return JSON.parse(localStorage.getItem(CLAVE_LOCAL)) || null; } catch(e){ return memoria; } }
+function guarda(){ memoria = yo; try { localStorage.setItem(CLAVE_LOCAL, JSON.stringify(yo)); } catch(e){} }
+let yo = carga() || {id:'', alias:'', hechos:{}, cola:[], tope:-1};
+let pantalla = 'ingreso', fallos = 0, libre = false, retoAbierto = '';
+
+const total = () => Object.values(yo.hechos).reduce((a, h) => a + (h.puntos || 0), 0);
+
+// ---- Comunicación con el servidor; nada de esto detiene el juego si falla
+async function envia(item){
+  const r = await fetch(`${API}/respuesta`, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(item)});
+  if (!r.ok) throw new Error(r.status);
+}
+async function vaciaCola(){
+  while (yo.cola.length) {
+    try { await envia(yo.cola[0]); yo.cola.shift(); guarda(); } catch(e){ return; }
+  }
+}
+function registra(reto, respuesta, puntos){
+  yo.cola.push({sesion:SES, jugador:yo.id, alias:yo.alias, reto, respuesta:String(respuesta), puntos});
+  guarda(); vaciaCola();
+}
+async function tick(){
+  if (document.visibilityState === 'hidden') return;
+  try {
+    const r = await fetch(`${API}/estado?s=${encodeURIComponent(SES)}`, {cache:'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    const e = await r.json();
+    fallos = 0; libre = false;
+    const ix = R.findIndex(x => x.id === e.reto);
+    if (ix > yo.tope) { yo.tope = ix; guarda(); }
+    retoAbierto = e.abierto ? e.reto : '';
+    if (pantalla === 'espera') { if (retoAbierto && !yo.hechos[retoAbierto]) abre(retoAbierto); else pintaEspera(); }
+    vaciaCola();
+  } catch(e){
+    fallos++;
+    if (fallos >= 3 && !libre) { libre = true; if (pantalla === 'espera') pintaEspera(); }
+  }
+}
+
+// ---- Pantallas
+function cabeza(){ return `<div class="hilo"></div><div class="top"><span>${esc(yo.alias)}</span><span><b>${total()}</b> puntos</span></div>`; }
+
+function pintaIngreso(){
+  pantalla = 'ingreso';
+  app.innerHTML = `<div class="hilo"></div>
+  <div class="tag">Agilismo en Auditoría Interna</div>
+  <h1>Ruta Ágil</h1>
+  <p class="sub">Doce principios, una auditoría. Cada reto suma puntos de evidencia y desbloquea un principio.</p>
+  <label class="tag" for="al">Tu alias</label>
+  <input id="al" type="text" maxlength="20" autocomplete="off" placeholder="Por ejemplo: Hilo Dorado" style="margin:6px 0 14px">
+  <button class="btn" id="ent" disabled>Entrar</button>
+  <p class="leg">Usa un alias, no tu nombre completo. Solo se guardan el alias y tus respuestas al juego. Todos los casos son ficticios: no escribas datos reales de la entidad.</p>`;
+  const a = document.getElementById('al'), b = document.getElementById('ent');
+  a.oninput = () => b.disabled = a.value.trim().length < 2;
+  b.onclick = () => {
+    yo.alias = a.value.trim(); yo.id = yo.id || 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    guarda(); registra('J', '', 0); pintaEspera(); tick();
+  };
+}
+
+function pintaEspera(){
+  pantalla = 'espera';
+  const hechos = yo.hechos, tope = libre ? R.length - 1 : yo.tope;
+  const pend = R.filter((r, i) => i <= tope && !hechos[r.id]);
+  const fin = hechos.T;
+  const prin = P.map(p => { const id = 'P' + p.n, ix = R.findIndex(r => r.id === id); return `<button class="ti ${hechos[id] ? 'hecho' : ix <= tope ? 'dis' : ''}" data-id="${id}">${p.n}</button>`; }).join('');
+  app.innerHTML = `${cabeza()}
+  <h1>${fin ? 'Terminaste la ruta' : 'Mira la pantalla'}</h1>
+  <p class="sub"><span class="pulso ${libre ? 'mal' : ''}"></span>${libre ? 'Sin conexión. Puedes seguir: cuando Laura lo indique, toca el reto.' : fin ? 'Gracias por jugar. Tus principios quedan aquí.' : 'El siguiente reto aparecerá solo cuando Laura lo abra.'}</p>
+  ${pend.length ? `<button class="btn" id="pen" style="margin-bottom:14px">${libre ? 'Abrir el siguiente reto' : 'Ponerme al día'} (${pend.length})</button>` : ''}
+  <div class="tag">Tus doce principios</div>
+  <div class="alb">${prin}</div>
+  ${fin ? `<div class="tag">Los doce, en orden</div><ul class="lp">${P.map(p => `<li><b>${p.n}.</b> ${esc(p.corto)}: ${esc(p.simple)}</li>`).join('')}</ul>` : '<p class="leg">Dorado: reto hecho. Toca un número dorado para volver a leer ese principio.</p>'}
+  <div id="mod"></div>`;
+  document.getElementById('pen')?.addEventListener('click', () => abre(pend[0].id));
+  app.querySelectorAll('.ti').forEach(t => t.onclick = () => {
+    const id = t.dataset.id;
+    if (hechos[id]) verCarta(+id.slice(1));
+    else if (R.findIndex(r => r.id === id) <= tope) abre(id);
+  });
+}
+function verCarta(n){
+  const m = document.getElementById('mod');
+  m.innerHTML = `<div class="modal"><div>${carta(n)}<button class="btn alt" id="cc">Cerrar</button></div></div>`;
+  document.getElementById('cc').onclick = () => m.innerHTML = '';
+}
+function carta(n){
+  const p = P[n - 1];
+  return `<div class="carta"><div class="pn">PRINCIPIO ${p.n} DE 12</div><h3>${esc(p.nombre)}</h3><q>«${esc(p.oficial)}»</q><div>${esc(p.simple)}</div></div>`;
+}
+
+function marco(r, cuerpo){
+  app.innerHTML = `${cabeza()}<div class="tag">${esc(r.tag)}</div><h2>${esc(r.titulo)}</h2>
+  ${r.caso ? `<p class="aviso">${esc(AVISO)}</p>` : ''}
+  ${r.situacion ? `<p class="sit">${esc(r.situacion)}</p>` : ''}${r.instr ? `<p class="sub">${esc(r.instr)}</p>` : ''}
+  <div id="cu" style="display:flex;flex-direction:column;flex:1">${cuerpo}</div>`;
+  return document.getElementById('cu');
+}
+const qs = (s, c) => c.querySelector(s), qa = (s, c) => [...c.querySelectorAll(s)];
+
+function abre(id){
+  const r = porId(id); if (!r) return;
+  pantalla = 'reto';
+  ({voto:rElige, elige:rElige, clasifica:rClasifica, ordena:rOrdena, desliza:rDesliza, reparte:rReparte, marca:rMarca, capacidad:rCapacidad, construye:rConstruye, muro:rMuro}[r.tipo])(r);
+  scrollTo(0, 0);
+}
+
+function cierra(r, respuesta, puntos, detalle){
+  yo.hechos[r.id] = {puntos};
+  registra(r.id, respuesta, puntos);
+  pantalla = 'resultado';
+  app.innerHTML = `${cabeza()}<div class="tag">${esc(r.tag)}</div>
+  ${r.tipo === 'voto' || r.tipo === 'muro' ? '<h2>Recibido</h2>' : `<div class="pts">+${puntos}</div><h2>${puntos >= 100 ? '¡Exacto!' : puntos >= 60 ? 'Bien encaminado' : 'Mira por qué'}</h2>`}
+  ${detalle ? `<ul class="det">${detalle}</ul>` : ''}
+  <div class="por">${esc(r.por)}</div>
+  ${r.n ? carta(r.n) : ''}
+  <div class="fin"><button class="btn" id="seg">Seguir</button></div>`;
+  document.getElementById('seg').onclick = () => { pintaEspera(); tick(); };
+  scrollTo(0, 0);
+}
+const fila = (t, bien, nota) => `<li class="${bien ? '' : 'no'}">${esc(t)}${nota ? `<small>${esc(nota)}</small>` : ''}</li>`;
+
+function rElige(r){
+  const c = marco(r, `<div>${r.opciones.map((o, i) => `<button class="op" data-i="${i}">${esc(o.t)}</button>`).join('')}</div><div class="fin"><button class="btn" id="go" disabled>Enviar</button></div>`);
+  let sel = -1;
+  qa('.op', c).forEach(b => b.onclick = () => { sel = +b.dataset.i; qa('.op', c).forEach(x => x.classList.toggle('on', x === b)); qs('#go', c).disabled = false; });
+  qs('#go', c).onclick = () => {
+    if (r.tipo === 'voto') return cierra(r, sel, 20);
+    const bien = !!r.opciones[sel].ok, buena = r.opciones.find(o => o.ok);
+    cierra(r, sel, bien ? 100 : 20, bien ? fila(buena.t, true) : fila(r.opciones[sel].t, false) + fila(buena.t, true, 'La mejor opción'));
+  };
+}
+function rClasifica(r){
+  const res = []; let k = 0;
+  const paso = () => {
+    if (k >= r.items.length) {
+      const mask = r.items.map((it, i) => res[i] === it.g ? 1 : 0), acierto = mask.reduce((a, b) => a + b, 0);
+      return cierra(r, mask.join(''), Math.round(100 * acierto / r.items.length), r.items.map((it, i) => fila(it.t, mask[i], mask[i] ? '' : 'Era: ' + r.grupos[it.g])).join(''));
+    }
+    const c = marco(r, `<div class="prog"><i style="width:${100 * k / r.items.length}%"></i></div><div class="tarj">${esc(r.items[k].t)}</div>${r.grupos.map((g, i) => `<button class="op" data-i="${i}" style="text-align:center;font-weight:700">${esc(g)}</button>`).join('')}<p class="leg">${k + 1} de ${r.items.length}</p>`);
+    qa('.op', c).forEach(b => b.onclick = () => { res[k++] = +b.dataset.i; paso(); });
+  };
+  paso();
+}
+function rOrdena(r){
+  const orden = r.items.map((t, i) => i).sort(() => Math.random() - .5), sel = [];
+  const c = marco(r, `<div id="li"></div><div class="fin"><button class="btn" id="go" disabled>Enviar</button></div>`);
+  const pinta = () => {
+    qs('#li', c).innerHTML = orden.map(i => { const p = sel.indexOf(i); return `<button class="op ${p >= 0 ? 'on' : ''}" data-i="${i}">${p >= 0 ? `<span class="num">${p + 1}</span>` : ''}${esc(r.items[i])}</button>`; }).join('');
+    qa('.op', c).forEach(b => b.onclick = () => { const i = +b.dataset.i, p = sel.indexOf(i); p >= 0 ? sel.splice(p, 1) : sel.push(i); pinta(); });
+    qs('#go', c).disabled = sel.length < r.items.length;
+  };
+  pinta();
+  qs('#go', c).onclick = () => {
+    const mask = sel.map((v, p) => v === p ? 1 : 0), ac = mask.reduce((a, b) => a + b, 0);
+    cierra(r, mask.join(''), Math.round(100 * ac / r.items.length), r.items.map((t, i) => fila(`${i + 1}. ${t}`, mask[i])).join(''));
+  };
+}
+function rDesliza(r){
+  const med = Math.round((r.min + r.max) / 2);
+  const c = marco(r, `<div class="num-g" id="v">${med}</div><p class="sub" style="text-align:center">${esc(r.unidad)}</p><input type="range" id="s" min="${r.min}" max="${r.max}" step="1" value="${med}"><div class="fin"><button class="btn" id="go">Enviar</button></div>`);
+  qs('#s', c).oninput = e => qs('#v', c).textContent = e.target.value;
+  qs('#go', c).onclick = () => {
+    const v = +qs('#s', c).value;
+    cierra(r, v, v >= r.ok[0] && v <= r.ok[1] ? 100 : v >= r.medio[0] && v <= r.medio[1] ? 60 : 30);
+  };
+}
+function rReparte(r){
+  const vals = r.partes.map(p => p.v);
+  const c = marco(r, `<div id="li"></div><div class="suma" id="su"></div><div class="fin"><button class="btn" id="go">Enviar</button></div>`);
+  const pinta = () => {
+    const s = vals.reduce((a, b) => a + b, 0);
+    qs('#li', c).innerHTML = r.partes.map((p, i) => `<div class="fila"><span>${esc(p.t)}</span><button class="pm" data-i="${i}" data-d="-2">−</button><b>${vals[i]}</b><button class="pm" data-i="${i}" data-d="2">+</button></div>`).join('');
+    qa('.pm', c).forEach(b => b.onclick = () => { const i = +b.dataset.i; vals[i] = Math.max(0, Math.min(r.total, vals[i] + (+b.dataset.d))); pinta(); });
+    const su = qs('#su', c); su.textContent = `Suma: ${s} de ${r.total} horas`; su.className = 'suma ' + (s === r.total ? 'bien' : 'mal');
+    qs('#go', c).disabled = s !== r.total;
+  };
+  pinta();
+  qs('#go', c).onclick = () => {
+    const ok = r.minimos.filter((m, i) => m && vals[i] >= m).length, req = r.minimos.filter(m => m).length;
+    cierra(r, vals.join('-'), ok === req ? 100 : ok ? 60 : 30, r.partes.map((p, i) => r.minimos[i] ? fila(`${p.t}: ${vals[i]} h`, vals[i] >= r.minimos[i], vals[i] >= r.minimos[i] ? '' : `Mínimo razonable: ${r.minimos[i]} h`) : '').join(''));
+  };
+}
+function rMarca(r){
+  const c = marco(r, `<div class="${r.papel ? 'papel' : ''}">${r.items.map((o, i) => `<button class="op ${r.tacha ? 'tacha' : ''}" data-i="${i}">${esc(o.t)}</button>`).join('')}</div><div class="fin"><button class="btn" id="go">Enviar</button></div>`);
+  qa('.op', c).forEach(b => b.onclick = () => b.classList.toggle('on'));
+  qs('#go', c).onclick = () => {
+    const on = qa('.op', c).map(b => b.classList.contains('on'));
+    const mask = r.items.map((o, i) => on[i] === !!o.ok ? 1 : 0), ac = mask.reduce((a, b) => a + b, 0);
+    cierra(r, mask.join(''), Math.round(100 * ac / r.items.length), r.items.map((o, i) => fila(o.t, mask[i], mask[i] ? '' : o.ok ? 'Debías marcarla' : 'No debías marcarla')).join(''));
+  };
+}
+function rCapacidad(r){
+  const c = marco(r, `<div>${r.items.map(o => `<button class="op" data-id="${o.id}"><span class="hr">${o.h} h</span>${esc(o.t)}<small>${esc(o.d)}</small></button>`).join('')}</div><div class="suma" id="su"></div><div class="barra"><i id="ba"></i></div><div class="fin"><button class="btn" id="go" disabled>Enviar</button></div>`);
+  const sel = new Set();
+  const pinta = () => {
+    const h = r.items.filter(o => sel.has(o.id)).reduce((a, o) => a + o.h, 0);
+    qs('#su', c).textContent = `${h} de ${r.total} horas`; qs('#su', c).className = 'suma ' + (h === r.total ? 'bien' : '');
+    qs('#ba', c).style.width = 100 * h / r.total + '%';
+    qa('.op', c).forEach(b => { const o = r.items.find(x => x.id === b.dataset.id), s = sel.has(o.id); b.classList.toggle('on', s); b.disabled = !s && h + o.h > r.total; });
+    qs('#go', c).disabled = !sel.size;
+  };
+  qa('.op', c).forEach(b => b.onclick = () => { const id = b.dataset.id; sel.has(id) ? sel.delete(id) : sel.add(id); pinta(); });
+  pinta();
+  qs('#go', c).onclick = () => {
+    const k = [...sel].sort().join('');
+    cierra(r, k, r.puntajes[k] ?? r.base);
+  };
+}
+function rConstruye(r){
+  const res = []; let k = 0;
+  const paso = () => {
+    if (k >= r.pasos.length) {
+      const mask = r.pasos.map((p, i) => p.opciones[res[i]].ok ? 1 : 0), ac = mask.reduce((a, b) => a + b, 0);
+      return cierra(r, mask.join(''), Math.round(100 * ac / r.pasos.length), r.pasos.map((p, i) => fila(p.t, mask[i], mask[i] ? '' : 'Mejor: ' + p.opciones.find(o => o.ok).t)).join(''));
+    }
+    const p = r.pasos[k];
+    const c = marco(r, `<div class="prog"><i style="width:${100 * k / r.pasos.length}%"></i></div><div class="tag">${esc(p.t)}</div>${p.opciones.map((o, i) => `<button class="op" data-i="${i}">${esc(o.t)}</button>`).join('')}`);
+    qa('.op', c).forEach(b => b.onclick = () => { res[k++] = +b.dataset.i; paso(); });
+  };
+  paso();
+}
+function rMuro(r){
+  const c = marco(r, `<textarea id="tx" rows="4" maxlength="140" placeholder="${esc(r.ph)}"></textarea><div class="fin"><button class="btn" id="go" disabled>Enviar</button></div>`);
+  const t = qs('#tx', c); t.oninput = () => qs('#go', c).disabled = t.value.trim().length < 8;
+  qs('#go', c).onclick = () => cierra(r, t.value.trim(), 50);
+}
+
+if (yo.alias) { pintaEspera(); } else pintaIngreso();
+tick();
+setInterval(tick, 4000 + Math.random() * 2000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick(); });
+</script>
+</body>
+</html>
