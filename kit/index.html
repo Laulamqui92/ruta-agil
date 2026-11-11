@@ -567,11 +567,11 @@ const A = () => S.aud[S.act];
 function leerAlmacen() { try { const t = localStorage.getItem(CLAVE); if (t) { const o = JSON.parse(t); if (o && o.aud) return o; } } catch (e) { } return null; }
 function escribir() {
   clearTimeout(tG); if (!tG || UI.demo) return; tG = 0;
-  try { localStorage.setItem(CLAVE, JSON.stringify(S)); sinGuardar = false; } catch (e) { if (!sinGuardar) { sinGuardar = true; aviso('Este navegador no permite guardar. Antes de cerrar, descargue una copia de seguridad desde Exportar.', 'te', 9000); } }
+  try { localStorage.setItem(CLAVE, JSON.stringify(Object.assign({}, S, { aud: Object.fromEntries(Object.entries(S.aud).filter(x => !x[1].nube)), anual: S.anual && S.anual.nube ? null : S.anual }))); sinGuardar = false; } catch (e) { if (!sinGuardar) { sinGuardar = true; aviso('Este navegador no permite guardar. Antes de cerrar, descargue una copia de seguridad desde Exportar.', 'te', 9000); } }
 }
 function guardar(sinFecha) {
   const a = A(); if (a && !UI.demo && sinFecha !== true) a.mod = Date.now();
-  clearTimeout(tG); tG = setTimeout(escribir, 220);
+  clearTimeout(tG); tG = setTimeout(escribir, 220); nubeProgramar();
 }
 function ruta(o, p) { const k = p.split('.'); for (let i = 0; i < k.length - 1; i++) { const s = k[i]; o = s[0] === '#' ? o.find(x => x.id === s.slice(1)) : o[s]; if (o == null) return [null, null]; } return [o, k[k.length - 1]]; }
 const rutaB = b => b[0] === '@' ? ruta(S.anual, b.slice(1)) : ruta(A(), b);
@@ -1049,16 +1049,18 @@ function pintarCab() {
   const p = enPlan();
   $('#cab').innerHTML = `<a class="marca" href="#inicio" data-a="ir" data-v="inicio"><b>Kit de <em>auditoría ágil</em></b></a>
     <div class="modo" role="tablist" aria-label="Qué se está viendo"><button data-a="ir" data-v="plan-tablero" class="${p ? 'on' : ''}" role="tab" aria-selected="${p}" title="El backlog del periodo y el tablero de auditorías">Plan anual</button><button data-a="ir" data-v="${p ? 'inicio' : UI.vista}" class="${p ? '' : 'on'}" role="tab" aria-selected="${!p}" title="El expediente de una auditoría">Auditoría</button></div>
-    <div class="selaud">${p ? `<button disabled style="cursor:default"><span><small>Plan anual${PA().ej ? ' · ejemplo' : ''}</small><span>${esc(PA().periodo || 'Periodo sin definir')}</span></span></button>` : `<button data-a="menuAud" aria-haspopup="true" title="Cambiar de auditoría"><span><small>Auditoría${a.ej ? ' · ejemplo' : ''}</small><span id="audNom">${esc(a.nombre || 'Auditoría sin nombre')}</span></span>${ic('mas3')}</button>`}</div>
+    <div class="selaud">${p ? `<button disabled style="cursor:default"><span><small>Plan anual${PA().ej ? ' · ejemplo' : Nube.on ? (PA().nube ? ' · compartido en vivo' : ' · solo en este computador') : ''}</small><span>${esc(PA().periodo || 'Periodo sin definir')}</span></span></button>` : `<button data-a="menuAud" aria-haspopup="true" title="Cambiar de auditoría"><span><small>Auditoría${a.ej ? ' · ejemplo' : Nube.on ? (a.nube ? (Nube.lectura || !Nube.puede ? ' · compartida, solo lectura' : ' · compartida en vivo') : ' · solo en este computador') : ''}</small><span id="audNom">${esc(a.nombre || 'Auditoría sin nombre')}</span></span>${ic('mas3')}</button>`}</div>
     <div class="acc"><button class="bt fan ico" data-a="tema" title="Cambiar entre fondo oscuro y claro" aria-label="Cambiar el tema">${ic(S.tema === 'claro' ? 'luna' : 'sol')}</button>
       <button class="bt" data-a="compartir" title="Código QR y enlace">${ic('comp')}<span class="tx">Compartir</span></button><button class="bt pri" data-a="exportar" title="Excel, respaldo e informe">${ic('baja')}<span class="tx">Exportar</span></button></div>`;
 }
 function pintarCiclo() {
   const c = $('#ciclo'); if (!c) return;
-  c.innerHTML = (enPlan() ? VISTAS_PLAN : VISTAS).map(v => `<a href="#${v[0]}" class="${v[0] === UI.vista ? 'on' : ''} ${DE_SPRINT.includes(v[0]) ? 'spr' : ''}" data-a="ir" data-v="${v[0]}"${v[0] === UI.vista ? ' aria-current="page"' : ''}><b>${v[1]}</b><span>${enPlan() ? subPlan(v[0]) : subVista(v[0])}</span></a>`).join('') + '<i id="chispa"></i>';
+  const hist = Nube.on ? (enPlan() ? (PA().nube ? [['plan-historial', 'Historial']] : []) : (A().nube ? [['historial', 'Historial']] : [])) : [];
+  c.innerHTML = (enPlan() ? VISTAS_PLAN : VISTAS).concat(hist).map(v => `<a href="#${v[0]}" class="${v[0] === UI.vista ? 'on' : ''} ${DE_SPRINT.includes(v[0]) ? 'spr' : ''}" data-a="ir" data-v="${v[0]}"${v[0] === UI.vista ? ' aria-current="page"' : ''}><b>${v[1]}</b><span>${v[0] === 'historial' || v[0] === 'plan-historial' ? pl(historial(enPlan() ? '__anual' : A().id).length, 'cambio', 'cambios') : enPlan() ? subPlan(v[0]) : subVista(v[0])}</span></a>`).join('') + '<i id="chispa"></i>';
   const on = $('a.on', c); if (on && c.scrollWidth > c.clientWidth) c.scrollTo({ left: on.offsetLeft - c.clientWidth / 2 + on.offsetWidth / 2, behavior: 'smooth' });
 }
 function pintar(o = {}) {
+  if ((UI.vista === 'historial' && !(Nube.on && A().nube)) || (UI.vista === 'plan-historial' && !(Nube.on && PA().nube))) UI.vista = enPlan() ? 'plan-tablero' : 'inicio';
   const m = $('main'), prev = new Map(), act = document.activeElement, b = act && act.dataset ? act.dataset.b : null;
   let ss = null; try { ss = act.selectionStart; } catch (e) { }
   $$('[data-nota]', m).forEach(n => prev.set(n.dataset.nota, n.getBoundingClientRect()));
@@ -1208,12 +1210,12 @@ const ACC = {
   cerrarSenal: el => { const r = A().res.find(x => x.id === el.dataset.id); if (!(r.estado || '').trim()) { aviso('Antes de cerrarla, escriba en el estado con qué evidencia se descartó.', 'te', 6000); return; } r.cer = true; guardar(); pintar(); pintarCajRes(); },
   reabrir: el => { const r = A().res.find(x => x.id === el.dataset.id); r.cer = false; guardar(); pintar(); pintarCajRes(); },
   planDe: el => { const r = A().res.find(x => x.id === el.dataset.id); A().plan.push({ id: uid(), res: r.id, accion: '', resp: '', fecha: '', avance: 0, eficaz: '', estado: 'Sin iniciar', obs: '' }); guardar(); cerrarCajon(true); ir('seguimiento'); const l = $$('[data-b$=".accion"]'); if (l.length) l[l.length - 1].focus(); },
-  menuAud: el => { const l = Object.values(S.aud).sort((x, y) => y.mod - x.mod); menu(el, `<div class="rot">Auditorías en este navegador</div>${l.map(a => `<button data-a="cambiarAud" data-id="${a.id}">${ic(a.id === S.act ? 'ok' : 'hoja')}<span>${esc(a.nombre || 'Auditoría sin nombre')}<small>${a.ej ? 'Ejemplo · ' : ''}${pl(a.items.length, 'actividad', 'actividades')}</small></span></button>`).join('')}<hr><button data-a="nueva">${ic('nuevo')}Nueva auditoría</button><button data-a="duplicar">${ic('copia')}Duplicar esta auditoría</button>${S.aud.ejemplo ? `<button data-a="reEjemplo">${ic('caja')}Restaurar el ejemplo de nómina</button>` : `<button data-a="reEjemplo">${ic('caja')}Cargar el ejemplo de nómina</button>`}<button data-a="borrarAud">${ic('basura')}Eliminar esta auditoría</button>`); },
+  menuAud: el => { const l = Object.values(S.aud).sort((x, y) => y.mod - x.mod); menu(el, `<div class="rot">${Nube.on ? 'Auditorías' : 'Auditorías en este navegador'}</div>${l.map(a => `<button data-a="cambiarAud" data-id="${a.id}">${ic(a.id === S.act ? 'ok' : 'hoja')}<span>${esc(a.nombre || 'Auditoría sin nombre')}<small>${a.ej ? 'Ejemplo · ' : Nube.on ? (a.nube ? 'Compartida · ' : 'Solo en este computador · ') : ''}${pl(a.items.length, 'actividad', 'actividades')}</small></span></button>`).join('')}<hr><button data-a="nueva">${ic('nuevo')}Nueva auditoría</button><button data-a="duplicar">${ic('copia')}Duplicar esta auditoría</button>${Nube.on && Nube.puede && !Nube.lectura && !A().nube && !A().ej ? `<button data-a="compartirAud">${ic('comp')}Compartir esta auditoría</button>` : ''}${S.aud.ejemplo ? `<button data-a="reEjemplo">${ic('caja')}Restaurar el ejemplo de nómina</button>` : `<button data-a="reEjemplo">${ic('caja')}Cargar el ejemplo de nómina</button>`}<button data-a="borrarAud">${ic('basura')}Eliminar esta auditoría</button>`); },
   cambiarAud: el => { cerrarMenu(); S.act = el.dataset.id; UI.sprint = null; UI.daily = null; guardar(true); pintarCab(); ir('inicio'); },
   nueva: () => { cerrarMenu(); ventana(`<h2>Nueva auditoría</h2><p>Se crea un expediente en blanco con una definición de terminado de cinco criterios, que se puede ajustar. El ejemplo de nómina se conserva.</p><form data-f="nueva" style="margin-top:14px">${campo('Nombre de la auditoría', '', '', { cl: 'gr', ph: 'Auditoría de contratación' }).replace('data-b=""', 'name="n" autofocus')}<div class="g g2" style="margin-top:16px"><label class="cmp"><span>Número de sprints</span><input class="in" type="number" name="s" min="1" max="12" value="4"></label><label class="cmp"><span>Semanas por sprint</span><input class="in" type="number" name="w" min="1" max="4" value="2"></label></div><div class="pie"><button type="button" class="bt fan" data-a="cerrarVentana">Cancelar</button><button class="bt pri">Crear</button></div></form>`); },
-  duplicar: () => { cerrarMenu(); const c = JSON.parse(JSON.stringify(A())); c.id = uid(); c.nombre += ' (copia)'; c.ej = false; c.mod = Date.now(); S.aud[c.id] = c; S.act = c.id; UI.sprint = null; UI.daily = null; guardar(); pintarCab(); ir('inicio'); aviso('Se creó una copia de la auditoría.', 'ok'); },
+  duplicar: () => { cerrarMenu(); const c = JSON.parse(JSON.stringify(A())); c.id = uid(); c.nombre += ' (copia)'; c.ej = false; c.mod = Date.now(); c.nube = !!(Nube.on && Nube.puede && !Nube.lectura && A().nube); S.aud[c.id] = c; S.act = c.id; UI.sprint = null; UI.daily = null; guardar(); pintarCab(); ir('inicio'); aviso('Se creó una copia de la auditoría.', 'ok'); },
   reEjemplo: () => { cerrarMenu(); const f = () => { S.aud.ejemplo = ejemplo(); S.act = 'ejemplo'; UI.sprint = null; UI.daily = null; guardar(); pintarCab(); ir('inicio'); }; if (S.aud.ejemplo) confirmar('Restaurar el ejemplo de nómina', 'El ejemplo vuelve a su estado inicial y se pierden los cambios que le haya hecho. Sus otras auditorías no cambian.', 'Restaurar', f); else f(); },
-  borrarAud: () => { cerrarMenu(); const a = A(); confirmar('Eliminar «' + esc(a.nombre) + '»', 'Se elimina de este navegador y no se puede recuperar. Si la necesita después, descargue antes un respaldo desde Exportar.', 'Eliminar', () => { delete S.aud[a.id]; const r = Object.keys(S.aud); if (!r.length) S.aud.ejemplo = ejemplo(); S.act = Object.keys(S.aud)[0]; UI.sprint = null; UI.daily = null; guardar(); pintarCab(); ir('inicio'); }, true); },
+  borrarAud: () => { cerrarMenu(); const a = A(); confirmar('Eliminar «' + esc(a.nombre) + '»', a.nube ? 'Se elimina para todas las personas con acceso y no se puede recuperar. Si la necesita después, descargue antes una copia de seguridad desde Exportar.' : 'Se elimina de este navegador y no se puede recuperar. Si la necesita después, descargue antes una copia de seguridad desde Exportar.', 'Eliminar', () => { if (a.nube) nubeBorrar(a); delete S.aud[a.id]; const r = Object.keys(S.aud); if (!r.length) S.aud.ejemplo = ejemplo(); S.act = Object.keys(S.aud)[0]; UI.sprint = null; UI.daily = null; guardar(); pintarCab(); ir('inicio'); }, true); },
   microIA: () => { const a = A(), l = a.lienzo, p = `Actúe como apoyo metodológico de un equipo de auditoría interna. Con la información siguiente, proponga entre 6 y 10 microtareas para el backlog de la auditoría, ordenadas de mayor a menor riesgo.\n\nAuditoría: ${a.nombre}\nObjetivo: ${l.objetivo || '(por definir)'}\nAlcance: ${l.alcance || '(por definir)'}\nRiesgos principales: ${(l.q3 || '(por definir)').replace(/\n/g, ' ')}\n\nResponda solo con una línea por microtarea, en este formato:\nMicrotarea | Incremento que entrega | Riesgo que cubre\n\nNo incluya nombres de personas ni datos reservados. No concluya sobre el resultado de las pruebas.`;
     ventana(`<h2>Microtareas con un asistente de IA</h2><p>El asistente propone las microtareas, el incremento de cada una y su orden. El equipo revisa, ajusta y aprueba el backlog.</p>
       <label class="cmp" style="margin-top:16px"><span>1 · Copie esta instrucción en la herramienta que autorice la entidad</span><textarea class="in" id="iaP" rows="7" readonly style="font-size:13.5px;border:1px solid var(--hilo2);padding:10px">${esc(p)}</textarea></label><button class="bt ch" data-a="copiar" data-de="iaP" style="margin-top:8px">${ic('copia')}Copiar la instrucción</button>
@@ -1269,7 +1271,8 @@ function enlazar() {
     if (k === 'req') { if (!v('t')) return; itm(f.dataset.id).req.push({ id: uid(), t: v('t'), ok: false }); guardar(); pintarCajon(); pintar(); const n = $('#caj form[data-f="req"] input'); if (n) n.focus(); }
     if (k === 'nota') { if (!v('t')) return; sprintVista().retro.notas.push({ id: uid(), c: +f.dataset.c, t: v('t'), v: 0 }); guardar(); pintar(); const n = $(`form[data-f="nota"][data-c="${f.dataset.c}"] input`); if (n) n.focus(); }
     if (k === 'obst') { if (!v('t')) return; a.imped.push({ id: uid(), fecha: HOY(), t: v('t'), item: v('item'), resp: (a.equipo.find(p => p.rol === 'sm') || {}).id || '', estado: 'a', fres: '' }); guardar(); pintar(); aviso('Obstáculo registrado. El Scrum Master gestiona su solución.', 'ok'); }
-    if (k === 'nueva') { const n = nuevaAuditoria(v('n') || 'Nueva auditoría'), ns = Math.max(1, Math.min(12, +v('s') || 1)), w = Math.max(1, Math.min(4, +v('w') || 2)), i0 = n.sprints[0].ini; n.sprints = []; for (let q = 0; q < ns; q++) n.sprints.push({ id: uid(), nombre: '', objetivo: '', ini: mas(i0, q * w * 7), fin: mas(i0, q * w * 7 + w * 7 - 3), rev: {}, retro: { notas: [], acciones: [] } }); S.aud[n.id] = n; S.act = n.id; UI.sprint = null; UI.daily = null; cerrarVentana(); guardar(); pintarCab(); ir('lienzo'); aviso('Auditoría creada. Empiece por el lienzo.', 'ok'); }
+    if (k === 'nueva') { const n = nuevaAuditoria(v('n') || 'Nueva auditoría'), ns = Math.max(1, Math.min(12, +v('s') || 1)), w = Math.max(1, Math.min(4, +v('w') || 2)), i0 = n.sprints[0].ini; n.sprints = []; for (let q = 0; q < ns; q++) n.sprints.push({ id: uid(), nombre: '', objetivo: '', ini: mas(i0, q * w * 7), fin: mas(i0, q * w * 7 + w * 7 - 3), rev: {}, retro: { notas: [], acciones: [] } }); n.nube = !!(Nube.on && Nube.puede && !Nube.lectura); S.aud[n.id] = n; S.act = n.id; UI.sprint = null; UI.daily = null; cerrarVentana(); guardar(); pintarCab(); ir('lienzo'); aviso(n.nube ? 'Auditoría creada y compartida con quienes tienen acceso. Empiece por el lienzo.' : 'Auditoría creada. Empiece por el lienzo.', 'ok', 6000); }
+    if (k === 'alias') { Nube.alias = v('n').slice(0, 60); try { localStorage.setItem(CLAVE + '.alias', Nube.alias); } catch (x) { } cerrarVentana(); pintar(); if (Nube.alias) aviso('En el historial aparecerá como «' + esc(Nube.alias) + '».', 'ok'); }
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if ($('#menu')) return cerrarMenu(); if ($('#mod')) return cerrarVentana(); if (UI.caj || UI.cajRes) return cerrarCajon(); if (UI.demo) return demoSalir(); }
@@ -1373,13 +1376,14 @@ function hojasExcel() {
     { n: 'Retrospectiva', titulo: 'Retrospectiva', nota: 'La retrospectiva revisa cómo se trabajó. Las conclusiones de la auditoría se tratan en el Sprint Review.', cab: ['Sprint', 'Tipo', 'Texto', 'Votos', 'Quién lo hace', 'Para cuándo', 'Cumplida'], anchos: [10, 36, 70, 9, 30, 14, 11], filas: a.sprints.flatMap((s, k) => [...s.retro.notas.map(n => [k + 1, RETRO[n.c], n.t, n.v || 0, '', '', '']), ...s.retro.acciones.map(x => [k + 1, 'Mejora acordada', x.t, '', nom(x.resp), F(x.fecha), x.ok ? 'Sí' : 'No'])]) },
     { n: 'Plan de mejoramiento', titulo: 'Plan de mejoramiento', nota: 'Seguimiento de las acciones acordadas para cada hallazgo.', cab: ['Hallazgo', 'Acción acordada', 'Responsable del proceso', 'Fecha', 'Avance %', 'Estado', 'Eficacia', 'Observación o explicación del atraso'], anchos: [12, 60, 30, 12, 11, 14, 16, 50], filas: a.plan.map(p => [(a.res.find(r => r.id === p.res) || {}).cod || '', p.accion, p.resp, F(p.fecha), +p.avance || 0, p.fecha && p.fecha < HOY() && p.estado !== 'Cumplida' ? 'Vencida' : p.estado, p.eficaz === 'Sí' ? 'Eficaz' : p.eficaz === 'No' ? 'No eficaz' : 'Sin verificar', p.obs || '']) },
     { n: 'Uso de IA', titulo: 'Registro de uso de inteligencia artificial', nota: 'Otro auditor puede repetir el paso y llegar al mismo resultado.', cab: ['Fecha', ...IACAMPOS.map(c => c[1])], anchos: [12, 30, 24, 34, 60, 40, 44, 44], filas: a.ia.map(r => [F(r.fecha), ...IACAMPOS.map(c => r[c[0]] || '')]) },
+    ...(Nube.on && a.nube ? [{ n: 'Historial', titulo: 'Historial de cambios', nota: 'Cada persona escribe solo su propio historial. Exportado el ' + fLarga(HOY()) + '.', cab: ['Fecha', 'Hora', 'Quién', 'Qué cambió'], anchos: [12, 9, 36, 110], filas: historial(a.id).map(x => { const d = new Date(x.t); return [F(fIso(d)), String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), quien(x), x.q]; }) }] : []),
     { n: 'Indicadores', titulo: 'Indicadores', nota: 'Calculados con la información del expediente al ' + fLarga(HOY()) + '. Los indicadores de 100 % son barreras de control.', cab: ['Indicador', 'Valor', 'Unidad'], anchos: [64, 12, 18], filas: [['Avance de la auditoría', m.avance, '%'], ['Actividades finalizadas', m.fin, 'de ' + m.total], ['Plazo promedio entre el compromiso y la entrega', m.ciclo ?? '', 'días'], ['Días de la señal a la comunicación', m.com ?? '', 'días'], ['Sprints revisados que cumplieron su objetivo', m.objOk, 'de ' + m.objTot], ['Finalizadas con evidencia, conclusión y revisión', m.bCierre, '%'], ['Actividades con riesgo e incremento definidos', m.bRiesgo, '%'], ['Cambios al backlog con aprobación', m.bCambios, '%'], ['Mejoras de retrospectiva cumplidas', pct(m.accOk, m.accTot), '%'], ['Obstáculos abiertos', abiertos().length, '']] }
   ];
 }
 
 /* ---------- copia del kit, respaldo e informe ---------- */
 function htmlDelKit(conDatos) {
-  const css = $('#css').textContent, js = $('#js').textContent, datos = conDatos ? JSON.stringify({ v: 1, aud: S.aud, act: S.act, tema: S.tema, anual: S.anual }).replace(/</g, '\\u003c') : '', C = '</' + 'script>';
+  const css = $('#css').textContent, js = $('#js').textContent, datos = conDatos ? JSON.stringify({ v: 1, aud: S.aud, act: S.act, tema: S.tema, anual: S.anual }, (k, v) => k === 'nube' ? undefined : v).replace(/</g, '\\u003c') : '', C = '</' + 'script>';
   return `<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">\n<meta name="author" content="Laura Lamprea Quiroga · @lauralampreaquiroga">\n<title>Kit de auditoría ágil</title>\n<style id="css">${css}</style>\n</head>\n<body>\n<div id="raiz"></div>\n<script id="datos" type="application/json">${datos}${C}\n<script id="js">${js}${C}\n</body>\n</html>\n`;
 }
 const cm = v => v == null ? '·' : String(v).replace('.', ',');
@@ -1398,13 +1402,13 @@ function restaurar(arch) {
   const r = new FileReader(); r.onload = () => {
     let l, an = null; try { const o = JSON.parse(r.result); an = o && o.anual && typeof o.anual === 'object' ? o.anual : null; l = o && o.aud ? Object.values(o.aud) : o && o.items ? [o] : null; if (!l || !l.length) throw 0; l.forEach(a => { if (!a || typeof a.id !== 'string' || !Array.isArray(a.items)) throw 0; normalizar(a); }); }
     catch (e) { aviso('El archivo no es una copia de seguridad de este kit.', 'te', 6000); return; }
-    const aplicar = () => { l.forEach(a => { S.aud[a.id] = a; S.act = a.id; }); if (an && (!S.anual || S.anual.ej || !S.anual.unidades.length)) S.anual = normalizarAnual(an); UI.sprint = null; UI.daily = null; guardar(true); cerrarVentana(); pintarCab(); ir('inicio'); aviso(pl(l.length, 'auditoría restaurada', 'auditorías restauradas') + ' desde la copia de seguridad.', 'ok'); };
+    const aplicar = () => { l.forEach(a => { a.nube = !!(S.aud[a.id] && S.aud[a.id].nube); S.aud[a.id] = a; S.act = a.id; }); if (an && (!S.anual || S.anual.ej || !S.anual.unidades.length)) S.anual = normalizarAnual(an); UI.sprint = null; UI.daily = null; guardar(true); cerrarVentana(); pintarCab(); ir('inicio'); aviso(pl(l.length, 'auditoría restaurada', 'auditorías restauradas') + ' desde la copia de seguridad.', 'ok'); };
     const pisa = l.filter(a => S.aud[a.id]);
     if (pisa.length) confirmar('Reemplazar «' + esc(pisa[0].nombre || 'Auditoría sin nombre') + '»', 'Esta auditoría ya está en este computador. La copia de seguridad reemplaza la versión actual y se pierde lo que haya cambiado después de exportarla.', 'Reemplazar', aplicar, true); else aplicar();
   }; r.readAsText(arch);
 }
 Object.assign(ACC, {
-  exportar: () => { ventana(`<h2>${enPlan() ? 'Exportar el plan anual' : 'Exportar el expediente'}</h2><p>La información queda en este computador, dentro del navegador con el que abrió el kit. Sale solo cuando usted exporta un archivo.</p>
+  exportar: () => { ventana(`<h2>${enPlan() ? 'Exportar el plan anual' : 'Exportar el expediente'}</h2><p>${Nube.on && (enPlan() ? PA().nube : A().nube) ? 'Esta información está compartida en el artefacto. Un archivo exportado es una copia a la fecha de hoy.' : 'La información queda en este computador, dentro del navegador con el que abrió el kit. Sale solo cuando usted exporta un archivo.'}</p>
     <div class="exps"><button data-a="expExcel">${ic('tabla')}<b>Excel</b><span>${enPlan() ? 'El lienzo, el backlog del periodo, los recursos y el control de cambios del plan anual.' : 'Un libro con una hoja por herramienta y el formato de los anexos de los Lineamientos.'}</span></button>
       ${EN_CLAUDE || enPlan() ? '' : `<button data-a="expInforme">${ic('impr')}<b>Informe de estado</b><span>Una vista para imprimir o guardar como PDF, con espacio para firmas.</span></button>`}
       <button data-a="expKit">${ic('caja')}<b>El kit con este expediente</b><span>Un archivo que se abre con doble clic, funciona sin conexión y lleva este expediente incluido.</span></button>
@@ -1412,7 +1416,7 @@ Object.assign(ACC, {
       <button data-a="expRest">${ic('sube')}<b>Restaurar una copia</b><span>Abre una copia de seguridad y trae sus auditorías a este computador.</span></button></div><input type="file" id="arRest" accept=".json,application/json" hidden>`, 'an');
     $('#arRest').onchange = e => e.target.files[0] && restaurar(e.target.files[0]); },
   expExcel: () => enPlan() ? guardarArchivo('Plan_anual_' + HOY() + '.xlsx', libro(hojasAnual())) : guardarArchivo(nomArch('expediente', 'xlsx'), libro(hojasExcel())),
-  expJson: () => guardarArchivo(nomArch('copia_de_seguridad', 'json'), JSON.stringify({ v: 1, aud: { [S.act]: A() }, act: S.act, anual: S.anual && !S.anual.ej ? S.anual : undefined }, null, 1), 'application/json'),
+  expJson: () => guardarArchivo(nomArch('copia_de_seguridad', 'json'), JSON.stringify({ v: 1, aud: { [S.act]: A() }, act: S.act, anual: S.anual && !S.anual.ej ? S.anual : undefined }, (k, v) => k === 'nube' ? undefined : v, 1), 'application/json'),
   expKit: () => guardarArchivo('Kit_auditoria_agil_' + HOY() + '.html', htmlDelKit(true), 'text/html'),
   expKitLimpio: () => guardarArchivo('Kit_auditoria_agil.html', htmlDelKit(false), 'text/html'),
   expInforme: () => { cerrarVentana(); informe(); }, expRest: () => $('#arRest').click(),
@@ -1518,7 +1522,7 @@ function subPlan(v) {
   return `${progU().filter(u => u.estado !== 'prog').length} de ${progU().length} iniciadas`;
 }
 const avanceU = u => { const a = S.aud[u.aud]; if (!a) return null; const cs = a.items.filter(i => i.sprint), f = cs.filter(i => i.col === 'fin').length; return { p: pct(f, cs.length), f, t: cs.length, n: a.nombre }; };
-const cabPlan = (t, her = '') => cab(t, (PA().ej ? '<span class="pil gr">Ejemplo</span><button class="bt ch" data-a="planMio">Empezar mi plan anual</button>' : '') + her);
+const cabPlan = (t, her = '') => cab(t, (PA().ej ? '<span class="pil gr">Ejemplo</span><button class="bt ch" data-a="planMio">Empezar mi plan anual</button>' : Nube.on && Nube.puede && !Nube.lectura && !PA().nube ? '<button class="bt ch" data-a="compartirPlan">Compartir este plan</button>' : '') + her);
 
 /* ---------- plan anual: vistas ---------- */
 V['plan-lienzo'] = () => {
@@ -1556,13 +1560,13 @@ V['plan-tablero'] = () => {
     <div class="panel"><h2>Sin programar</h2>${sin.map(u => `<div class="mini" style="grid-template-columns:minmax(0,1fr) auto 150px"><span>${esc(u.nombre) || 'Sin nombre'}<br><small class="apag">${TIPOU[u.tipo]} · última auditoría: ${esc(u.ultima) || 'sin dato'}</small></span><span class="pil ${u.riesgo === 'a' ? 'te' : u.riesgo === 'm' ? 'or' : 'gr'}">Riesgo ${RIES[u.riesgo].toLowerCase()}</span>${selec(`@unidades.#${u.id}.trim`, u.trim, TRIM, { et: 'Programación' })}</div>`).join('') || '<div class="vacio">Todas las unidades del backlog están programadas.</div>'}</div>`;
 };
 Object.assign(ACC, {
-  planMio: () => confirmar('Empezar mi plan anual', 'El plan de ejemplo se reemplaza por uno en blanco. Las auditorías de este computador no cambian.', 'Empezar en blanco', () => { S.anual = anualVacio(); guardar(true); ir('plan-lienzo'); }),
+  planMio: () => confirmar('Empezar mi plan anual', 'El plan de ejemplo se reemplaza por uno en blanco. Las auditorías de este computador no cambian.', 'Empezar en blanco', () => { S.anual = anualVacio(); S.anual.nube = !!(Nube.on && Nube.puede && !Nube.lectura); guardar(true); ir('plan-lienzo'); }),
   planMas: () => { PA().unidades.push({ id: uid(), nombre: '', tipo: 'aud', riesgo: 'm', ultima: '', dias: 0, trim: '', estado: 'prog', aud: '' }); guardar(true); pintar(); const l = $$('[data-b^="@unidades."][data-b$=".nombre"]'); if (l.length) l[l.length - 1].focus(); },
   planCambio: () => { PA().cambios.push({ id: uid(), fecha: HOY(), cambio: '', motivo: '', aprobo: '' }); guardar(true); pintar(); },
   planOrdenar: () => { const o = { a: 0, m: 1, b: 2 }; PA().unidades.sort((x, y) => (y.tipo === 'ley') - (x.tipo === 'ley') || o[x.riesgo] - o[y.riesgo] || (parseInt(x.ultima) || 0) - (parseInt(y.ultima) || 0)); guardar(true); pintar(); aviso('Backlog ordenado: informes de ley, mayor riesgo y más tiempo sin auditar.', 'ok'); },
   planPaso: el => { const u = PA().unidades.find(x => x.id === el.dataset.id), k = ESTU.findIndex(e => e[0] === u.estado) + (+el.dataset.d); if (ESTU[k]) { u.estado = ESTU[k][0]; guardar(true); pintar(); } },
   planAbrir: el => { const u = PA().unidades.find(x => x.id === el.dataset.id); if (!S.aud[u.aud]) { u.aud = ''; pintar(); return; } S.act = u.aud; UI.sprint = null; UI.daily = null; guardar(true); ir('inicio'); },
-  planCrear: el => { const u = PA().unidades.find(x => x.id === el.dataset.id), n = nuevaAuditoria('Auditoría de ' + (u.nombre || 'unidad auditable').toLowerCase()); S.aud[n.id] = n; u.aud = n.id; if (u.estado === 'prog') u.estado = 'curso'; S.act = n.id; UI.sprint = null; UI.daily = null; guardar(); ir('lienzo'); aviso('Expediente creado y enlazado con el plan anual. Empiece por el lienzo.', 'ok'); }
+  planCrear: el => { const u = PA().unidades.find(x => x.id === el.dataset.id), n = nuevaAuditoria('Auditoría de ' + (u.nombre || 'unidad auditable').toLowerCase()); n.nube = !!(Nube.on && Nube.puede && !Nube.lectura && PA().nube); S.aud[n.id] = n; u.aud = n.id; if (u.estado === 'prog') u.estado = 'curso'; S.act = n.id; UI.sprint = null; UI.daily = null; guardar(); ir('lienzo'); aviso('Expediente creado y enlazado con el plan anual. Empiece por el lienzo.', 'ok'); }
 });
 function hojasAnual() {
   const p = PA(), F = f => ({ f: f || '' });
@@ -1589,6 +1593,213 @@ Object.assign(ACC, {
     i.sprint = s.id; const c = anotarCambio(i, s, 'entra al sprint'); guardar(); pintar(); ventanaTomar(); aviso(`<b>${esc(i.cod)}</b> entró al sprint ${sprN(s.id)}.` + (c ? ' Quedó en el control de cambios: complete el motivo y quién aprueba.' : ''), 'ok', 7000); },
   masItemSprint: () => { const a = A(), s = sprintVista(), n = Math.max(0, ...a.items.map(x => /^T\d+$/.test(x.cod || '') ? +x.cod.slice(1) : 0)) + 1, i = { id: uid(), cod: 'T' + n, t: '', inc: '', riesgo: '', crit: '', metodo: '', pri: 'm', dias: 1, resp: UI.filtro || '', sprint: s.id, col: 'no', req: [], dod: {}, pt: '', concl: '', rev: '', frev: '', lista: false, ini: '', fin: '', hist: [], bloq: '' };
     a.items.push(i); const c = anotarCambio(i, s, 'se agrega al sprint'); guardar(); pintar(); abrirCajon(i.id); setTimeout(() => { const t = $('#caj textarea'); if (t) t.focus(); }, 350); if (c) aviso('La actividad nueva quedó en el control de cambios: complete el motivo y quién aprueba.', '', 7000); }
+});
+
+/* ===== Kit de auditoría ágil · trabajo compartido en vivo (solo dentro del artefacto de Claude) =====
+   Cada auditoría compartida vive en la base del artefacto: un documento de cabecera y un documento por actividad.
+   El kit sigue trabajando sobre S.aud; este módulo compara con lo último sincronizado, sube solo lo que cambió,
+   aplica lo que cambian los demás y anota cada cambio en el historial de quien lo hizo. Fuera de Claude no hace nada. */
+const Nube = { on: false, db: null, user: null, uid: null, nombre: '', alias: '', puede: true, lectura: false, base: {}, carga: {}, subs: {}, cola: {}, logs: {}, nombres: {}, pendLog: [], logListo: false, baseAnual: null, tab: '', vistos: {}, vuelo: {} };
+const CAB_N = ['nombre', 'creado', 'lienzo', 'wip', 'acuerdos', 'equipo', 'sprints', 'dod', 'cambios', 'imped', 'res', 'plan', 'ia', 'recon', 'seq'];
+const ANU_N = ['periodo', 'fecha', 'jefe', 'alta', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'ley', 'valorAgil', 'exito', 'cap', 'aprobo', 'faprob', 'unidades', 'cambios'];
+const TXT_CAB = { nombre: 'Cambió el nombre de la auditoría', lienzo: 'Editó el lienzo del proyecto', wip: 'Cambió los límites del tablero', acuerdos: 'Editó los acuerdos del equipo', equipo: 'Editó los roles y el equipo', sprints: 'Editó los sprints (planeación, Sprint Review o retrospectiva)', dod: 'Editó la definición de terminado', cambios: 'Editó el control de cambios', imped: 'Editó los obstáculos', res: 'Editó las señales, alertas o hallazgos', plan: 'Editó el plan de mejoramiento', ia: 'Editó el registro de uso de IA', recon: 'Editó el reconocimiento' };
+const TXT_ITEM = { t: 'el nombre', inc: 'el incremento', riesgo: 'el riesgo', crit: 'el criterio', metodo: 'el procedimiento', pri: 'la prioridad', dias: 'el plazo', resp: 'el responsable', sprint: 'el sprint', req: 'la definición de listo', dod: 'los criterios de terminado', pt: 'el papel de trabajo', concl: 'la conclusión', rev: 'quién revisó', frev: 'la fecha de revisión', lista: 'la marca de lista para revisión', cod: 'el código' };
+const TXT_ANU = { unidades: 'el backlog del periodo', cambios: 'el control de cambios', cap: 'los recursos', aprobo: 'la aprobación', faprob: 'la aprobación', ley: 'los asuntos clave', valorAgil: 'los asuntos clave', exito: 'los asuntos clave' };
+const ordenar = v => Array.isArray(v) ? v.map(ordenar) : v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = ordenar(v[k]); return o; }, {}) : v;
+const J = v => JSON.stringify(ordenar(v === undefined ? null : v));
+const copia = v => JSON.parse(JSON.stringify(v === undefined ? null : v));
+const compartidas = () => Object.values(S.aud).filter(a => a.nube);
+const esObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+const esLista = v => Array.isArray(v) && v.every(x => esObj(x) && typeof x.id === 'string' && /^[\w-]{1,40}$/.test(x.id));
+/* forma en que se guarda en la base: las listas van como mapas por id, para que cada fila se mezcle sola */
+function aR(v) {
+  if (esLista(v)) { const o = { _l: 1 }; v.forEach((x, k) => { const e = aR(x); delete e.id; e._o = k; o[x.id] = e; }); return o; }
+  if (Array.isArray(v)) return copia(v);
+  if (esObj(v)) { const o = {}; Object.keys(v).forEach(k => { if (v[k] !== undefined && k !== 'nube') o[k] = aR(v[k]); }); return o; }
+  return v === undefined ? null : v;
+}
+function deR(v) {
+  if (Array.isArray(v)) return copia(v);
+  if (esObj(v)) { if (v._l) return Object.keys(v).filter(k => k !== '_l' && esObj(v[k]) && /^[\w-]{1,40}$/.test(k)).map(k => { const e = deR(v[k]); e.id = k; return e; }).sort((x, y) => ((+x._o || 0) - (+y._o || 0)) || (x.id < y.id ? -1 : 1)).map(e => { delete e._o; return e; }); const o = {}; Object.keys(v).forEach(k => { o[k] = deR(v[k]); }); return o; }
+  return v;
+}
+/* lo que cambió entre lo local y lo último sincronizado: solo esas hojas viajan a la base */
+function parche(l, b) {
+  if (esObj(l) && esObj(b)) { const q = {}; let n = 0; Object.keys(l).forEach(k => { const x = parche(l[k], b[k]); if (x !== undefined) { q[k] = x; n++; } }); if (l._l) Object.keys(b).forEach(k => { if (!(k in l) && b[k] !== null) { q[k] = null; n++; } }); return n ? q : undefined; }
+  return l === undefined || J(l) === J(b) ? undefined : copia(l);
+}
+/* mezcla de tres vías, hoja por hoja: [resultado, nueva base]. Un cambio local sin subir se conserva. */
+function fusion3(l, b, r) {
+  if (esObj(r) && (esObj(l) || l === undefined) && (esObj(b) || b == null)) {
+    if (l === undefined && esObj(b)) return [undefined, b];
+    const m = esObj(l) ? Object.assign({}, l) : {}, nb = esObj(b) ? Object.assign({}, b) : {};
+    Object.keys(r).forEach(k => { const z = fusion3(l ? l[k] : undefined, b ? b[k] : undefined, r[k]); if (z[0] === undefined) delete m[k]; else m[k] = z[0]; if (z[1] === undefined) delete nb[k]; else nb[k] = z[1]; });
+    return [m, nb];
+  }
+  if (J(r) === J(b)) return [l, b];
+  if (J(l) === J(b) || J(l) === J(r)) return [J(l) === J(r) ? l : copia(r), copia(r)];
+  return [l, b];
+}
+const tomar = (o, ks) => { const x = {}; ks.forEach(k => { if (o[k] !== undefined) x[k] = o[k]; }); return x; };
+
+/* ---------- conexión ---------- */
+async function nubeConectar() {
+  if (!(window.claude && typeof window.claude.use === 'function')) return;
+  let db = null, user = null; try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) { }
+  if (!db) return;
+  Nube.db = db; Nube.user = user; Nube.on = true;
+  try { const yo = user ? await user.me() : null; Nube.uid = yo && yo.id ? yo.id : null; Nube.nombre = yo && yo.name ? yo.name : ''; const c = user ? await user.can('data.write') : null; Nube.puede = c !== false; } catch (e) { }
+  try { Nube.alias = localStorage.getItem(CLAVE + '.alias') || ''; Nube.tab = localStorage.getItem(CLAVE + '.tab') || uid() + uid(); localStorage.setItem(CLAVE + '.tab', Nube.tab); } catch (e) { Nube.tab = uid() + uid(); }
+  const err = e => nubeFalla(e, 'lectura');
+  Nube.subs.aud = db.collection('auditorias').onSnapshot(nubeAuditorias, err);
+  Nube.subs.anual = db.doc('anual/plan').onSnapshot(nubeAnual, err);
+  Nube.subs.gente = db.collection('log').onSnapshot(nubeGente, err);
+  Nube.subs.anon = db.collection('log_anon').onSnapshot(s => nubeLog('anon', s), err);
+  if (Nube.uid) nubeSeguir(Nube.uid);
+  Nube.espera = setTimeout(() => { if (!Nube.listo) aviso('Todavía no se pudo leer la información compartida. Lo que aparezca puede no estar al día.', 'te', 9000); }, 10000);
+  pintarCab(); pintarCiclo();
+  if (Nube.puede && !Nube.nombre && !Nube.alias) setTimeout(() => { if (!$('#mod') && !UI.demo) ACC.miNombre(); }, 1500);
+}
+function nubeFalla(e, que) {
+  const c = e && e.code;
+  if (c === 'revoked' || c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed') { Nube.lectura = true; pintarCab(); aviso('Se perdió el acceso a la información compartida. Lo que cambie desde ahora no se guarda.', 'te', 9000); return; }
+  if (c === 'invalid_argument' && que !== 'lectura') { if (!Nube.lectura) { Nube.lectura = true; pintarCab(); aviso('Su acceso es de solo lectura: los cambios que haga no se guardan para los demás.', 'te', 9000); } return; }
+  if (c === 'quota_exceeded') { aviso('La base compartida del artefacto está llena. Exporte y elimine auditorías que ya no use.', 'te', 9000); return; }
+  if (!Nube.avisoRed) { Nube.avisoRed = true; aviso('No se pudo guardar un cambio en la base compartida. Revise la conexión.', 'te', 7000); setTimeout(() => { Nube.avisoRed = false; }, 20000); }
+}
+function nubeEscribir(ref, verbo, datos) {
+  const k = ref.path, hacer = () => verbo === 'delete' ? ref.delete() : ref[verbo](datos); Nube.vuelo[k] = (Nube.vuelo[k] || 0) + 1;
+  Nube.cola[k] = (Nube.cola[k] || Promise.resolve()).then(hacer).catch(e => e && e.code === 'unavailable' ? new Promise(r => setTimeout(r, 1200 + Math.random() * 800)).then(hacer).catch(x => nubeFalla(x, k)) : nubeFalla(e, k))
+    .then(() => { Nube.vuelo[k]--; if (Nube.vuelo[k] > 0) return; delete Nube.vuelo[k]; const m = k.match(/^auditorias\/([\w-]+)/); if (m && nubeFusionar(m[1])) nubePintar(); });
+}
+let tNubeP = 0;
+function nubePintar() { clearTimeout(tNubeP); tNubeP = setTimeout(() => { if (arrastre.on && arrastre.on.mov) return nubePintar(); if (UI.demo) return; pintarCab(); pintar(); pintarCajon(); }, 140); }
+
+/* ---------- lo que llega de los demás ---------- */
+function nubeAuditorias(snap) {
+  const def = !snap.metadata.fromCache, ids = {};
+  snap.docs.forEach(d => { ids[d.id] = 1; if (!/^[\w-]{1,40}$/.test(d.id)) return; const dat = d.data(); if (Nube.vistos['a_' + d.id] === dat) return; Nube.vistos['a_' + d.id] = dat;
+    const c = Nube.carga[d.id] || (Nube.carga[d.id] = { cab: null, items: {}, tieneItems: false }); c.cab = copia(dat);
+    if (!Nube.subs['i_' + d.id]) Nube.subs['i_' + d.id] = Nube.db.collection('auditorias/' + d.id + '/items').onSnapshot(s => nubeItems(d.id, s), e => nubeFalla(e, 'lectura'));
+    nubeFusionar(d.id); });
+  if (def) {
+    Object.keys(Nube.carga).forEach(id => { if (ids[id] || !Nube.carga[id].cab) return; const a = S.aud[id]; if (Nube.subs['i_' + id]) { Nube.subs['i_' + id](); delete Nube.subs['i_' + id]; } delete Nube.carga[id]; delete Nube.base[id]; delete Nube.vistos['a_' + id];
+      if (a && a.nube) { delete S.aud[id]; if (S.act === id) { if (!Object.keys(S.aud).length) S.aud.ejemplo = ejemplo(); S.act = Object.keys(S.aud)[0]; UI.sprint = null; cerrarCajon(true); aviso('Otra persona eliminó la auditoría que tenía abierta.', 'te', 8000); UI.vista = 'inicio'; } } });
+    if (!Nube.listo) { Nube.listo = true; clearTimeout(Nube.espera); }
+  }
+  nubePintar();
+}
+function nubeItems(id, snap) {
+  const c = Nube.carga[id]; if (!c) return; const m = {};
+  snap.docs.forEach(d => { if (/^[\w-]{1,40}$/.test(d.id)) m[d.id] = d.data(); });
+  if (snap.metadata.fromCache && c.tieneItems && Object.keys(m).length < Object.keys(c.items).length) return;
+  c.items = m; c.tieneItems = true; nubeFusionar(id); nubePintar(); nubeProgramar();
+}
+function nubeFusionar(id) {
+  const c = Nube.carga[id]; if (!c || !c.cab || !c.tieneItems) return false;
+  let a = S.aud[id]; const ruta0 = 'auditorias/' + id; let hubo = false;
+  if (a && !a.nube && !Nube.base[id]) { const n = uid(); delete S.aud[id]; a.id = n; a.nombre = (a.nombre || 'Auditoría') + ' (copia de este computador)'; S.aud[n] = a; if (S.act === id) S.act = n; a = null; }
+  const nuevo = !a, B = Nube.base[id] || (Nube.base[id] = { cab: null, items: {}, existe: true }); B.existe = true;
+  if (nuevo) { a = nuevaAuditoria(''); a.id = id; a.items = []; S.aud[id] = a; }
+  a.nube = true; a.ej = false;
+  let orden = null;
+  if (!Nube.vuelo[ruta0]) {
+    const lr = nuevo ? undefined : Object.assign(aR(tomar(a, CAB_N)), { orden: a.items.map(i => i.id) }), z = fusion3(lr, nuevo ? undefined : B.cab || {}, tomar(c.cab, CAB_N.concat('orden'))), m = z[0] || {};
+    CAB_N.forEach(k => { if (m[k] == null || (lr && J(m[k]) === J(lr[k]))) return; a[k] = deR(m[k]); hubo = true; });
+    if (Array.isArray(m.orden) && (!lr || J(m.orden) !== J(lr.orden))) orden = m.orden;
+    B.cab = z[1] || {};
+  }
+  const loc = {}; a.items.forEach(i => { loc[i.id] = i; });
+  Object.keys(c.items).forEach(iid => { const rp = ruta0 + '/items/' + iid; if (Nube.vuelo[rp]) return; const l = loc[iid], lr = l ? aR(l) : undefined, z = fusion3(lr, B.items[iid], c.items[iid]);
+    if (z[0] === undefined) return; if (z[1] !== undefined) B.items[iid] = z[1];
+    if (!l) { const n = deR(z[0]); n.id = iid; a.items.push(n); loc[iid] = n; hubo = true; } else if (J(z[0]) !== J(lr)) { const n = deR(z[0]); Object.keys(n).forEach(f => { l[f] = n[f]; }); l.id = iid; hubo = true; } });
+  a.items = a.items.filter(i => { if (c.items[i.id] || B.items[i.id] === undefined || Nube.vuelo[ruta0 + '/items/' + i.id]) return true; delete B.items[i.id]; hubo = true; return false; });
+  if (orden) { const pos = {}; orden.forEach((x, k) => { pos[x] = k; }); a.items = a.items.map((i, k) => [i, pos[i.id] != null ? pos[i.id] : 1e6 + k]).sort((x, y) => x[1] - y[1]).map(x => x[0]); hubo = true; }
+  normalizar(a); a.nube = true; a.ej = false;
+  if (nuevo) { B.cab = Object.assign(aR(tomar(a, CAB_N)), { orden: a.items.map(i => i.id) }); a.items.forEach(i => { B.items[i.id] = aR(i); }); }
+  if (nuevo && UI.esperaAct === id) { S.act = id; UI.esperaAct = null; UI.sprint = null; }
+  return hubo || nuevo;
+}
+function nubeAnual(snap) {
+  if (!snap.exists) { if (!snap.metadata.fromCache && S.anual && S.anual.nube && Nube.baseAnual && !Nube.vuelo['anual/plan']) { S.anual = anualEjemplo(); Nube.baseAnual = null; nubePintar(); } return; }
+  const d = snap.data(); if (Nube.vistos.anual === d) return; Nube.vistos.anual = d;
+  const p = S.anual, r = tomar(d, ANU_N);
+  if (p && !p.nube && !p.ej && p.unidades.length) { if (!Nube.avisoPlan) { Nube.avisoPlan = true; aviso('Hay un plan anual compartido. El de este computador no se comparte.', '', 8000); } return; }
+  if (!p || !p.nube || !Nube.baseAnual) { const n = normalizarAnual(deR(r)); n.nube = true; n.ej = false; S.anual = n; Nube.baseAnual = aR(tomar(n, ANU_N)); nubePintar(); return; }
+  if (Nube.vuelo['anual/plan']) return;
+  const lr = aR(tomar(p, ANU_N)), z = fusion3(lr, Nube.baseAnual, r), m = z[0] || {}; let hubo = false;
+  ANU_N.forEach(k => { if (m[k] == null || J(m[k]) === J(lr[k])) return; p[k] = deR(m[k]); hubo = true; });
+  Nube.baseAnual = z[1] || {}; if (hubo) { const n = normalizarAnual(p); n.nube = true; n.ej = false; S.anual = n; nubePintar(); }
+}
+
+/* ---------- lo que sube este computador ---------- */
+let tNube = 0;
+function nubeProgramar() { if (!Nube.on || UI.demo) return; clearTimeout(tNube); tNube = setTimeout(nubeSubir, 650); }
+function nubeSubir() {
+  clearTimeout(tNube); if (!Nube.on || Nube.lectura || !Nube.puede || UI.demo) return;
+  compartidas().forEach(a => {
+    const id = a.id, c = Nube.carga[id]; if (c && c.cab && !c.tieneItems) return;
+    const B = Nube.base[id] || (Nube.base[id] = { cab: null, items: {}, existe: false }), ent = [], vivos = {}; let altas = 0;
+    a.items.forEach(i => { vivos[i.id] = 1; const lr = aR(i), b = B.items[i.id], ref = Nube.db.doc('auditorias/' + id + '/items/' + i.id);
+      if (b === undefined) { nubeEscribir(ref, 'set', copia(lr)); ent.push(`Creó la actividad ${i.cod}${i.t ? ' · ' + i.t : ''}`); altas++; B.items[i.id] = lr; return; }
+      const q = parche(lr, b); if (!q) return; nubeEscribir(ref, 'update', q); const t = textoItem(i, deR(b), q); if (t) ent.push(t); B.items[i.id] = lr; });
+    Object.keys(B.items).forEach(iid => { if (vivos[iid]) return; const bo = deR(B.items[iid]); nubeEscribir(Nube.db.doc('auditorias/' + id + '/items/' + iid), 'delete'); delete B.items[iid]; ent.push(`Eliminó la actividad ${bo.cod || ''}${bo.t ? ' · ' + bo.t : ''}`); altas++; });
+    const lr = Object.assign(aR(tomar(a, CAB_N)), { orden: a.items.map(i => i.id) }), ref = Nube.db.doc('auditorias/' + id);
+    if (!B.existe) { nubeEscribir(ref, 'set', Object.assign({ v: 1 }, copia(lr))); ent.length = 0; ent.push(`Compartió la auditoría «${a.nombre || 'sin nombre'}»`); B.existe = true; B.cab = lr; }
+    else { const q = parche(lr, B.cab || {}); if (q) { nubeEscribir(ref, 'update', q); Object.keys(q).forEach(k => { if (TXT_CAB[k]) ent.push(TXT_CAB[k]); else if (k === 'orden' && !altas) ent.push('Cambió el orden del backlog'); }); B.cab = lr; } }
+    if (ent.length) nubeAnotar(id, ent);
+  });
+  const pa = S.anual; if (pa && pa.nube) { const lr = aR(tomar(pa, ANU_N)), ref = Nube.db.doc('anual/plan');
+    if (!Nube.baseAnual) { nubeEscribir(ref, 'set', Object.assign({ v: 1 }, copia(lr))); Nube.baseAnual = lr; nubeAnotar('__anual', ['Compartió el plan anual']); }
+    else { const q = parche(lr, Nube.baseAnual); if (q) { nubeEscribir(ref, 'update', q); Nube.baseAnual = lr; nubeAnotar('__anual', ['Editó en el plan anual ' + [...new Set(Object.keys(q).map(k => TXT_ANU[k] || 'el lienzo de auditoría'))].join(', ')]); } } }
+}
+function textoItem(i, bo, p) {
+  const n = `${i.cod}${i.t ? ' · ' + i.t : ''}`, col = c => (COLS.find(x => x.id === c) || {}).u || c, k = Object.keys(p).filter(f => !['col', 'hist', 'ini', 'fin', 'bloq', 'id'].includes(f)), partes = [];
+  if (p.col !== undefined) partes.push(`Pasó ${n} de ${col(bo.col)} a ${col(i.col)}`);
+  const et = [...new Set(k.map(f => TXT_ITEM[f]).filter(Boolean))]; if (et.length) partes.push((partes.length ? 'y cambió ' : `Cambió en ${n} `) + et.join(', '));
+  return partes.join(' ');
+}
+function nubeBorrar(a) {
+  const B = Nube.base[a.id]; if (!B || !Nube.on) return; Object.keys(B.items).forEach(iid => nubeEscribir(Nube.db.doc('auditorias/' + a.id + '/items/' + iid), 'delete')); nubeEscribir(Nube.db.doc('auditorias/' + a.id), 'delete');
+  nubeAnotar(a.id, [`Eliminó la auditoría «${a.nombre || 'sin nombre'}»`]); delete Nube.base[a.id]; if (Nube.subs['i_' + a.id]) { Nube.subs['i_' + a.id](); delete Nube.subs['i_' + a.id]; } delete Nube.carga[a.id];
+}
+
+/* ---------- historial: cada persona escribe solo el suyo ---------- */
+function nubeGente(snap) { snap.docs.forEach(d => { if (/^[\w.~:@+-]{1,200}$/.test(d.id)) nubeSeguir(d.id); }); if (!snap.metadata.fromCache && Nube.uid && Nube.puede && !Nube.registrado && !snap.docs.some(d => d.id === Nube.uid)) { Nube.registrado = true; nubeEscribir(Nube.db.doc('log/' + Nube.uid), 'set', { uid: Nube.uid }); } }
+function nubeSeguir(u) { if (Nube.subs['l_' + u]) return; Nube.subs['l_' + u] = Nube.db.collection('log/' + u + '/d').onSnapshot(s => nubeLog(u, s), e => nubeFalla(e, 'lectura')); }
+function nubeLog(u, snap) { const m = {}; snap.docs.forEach(d => { m[d.id] = d.data(); }); Nube.logs[u] = m; if ((u === Nube.uid || (!Nube.uid && u === 'anon')) && !snap.metadata.fromCache && !Nube.logListo) { Nube.logListo = true; nubeVaciarLog(); } if (UI.vista === 'historial' || UI.vista === 'plan-historial') nubePintar(); else pintarCiclo(); }
+function nubeAnotar(aud, textos) { textos.forEach(q => Nube.pendLog.push({ aud, q, t: Date.now() })); nubeVaciarLog(); }
+function nubeVaciarLog() {
+  if (!Nube.logListo || !Nube.pendLog.length) return; const porDoc = {};
+  Nube.pendLog.splice(0).forEach(x => { const d = new Date(x.t), dia = fIso(d).replace(/-/g, ''), k = x.aud + '__' + dia + (Nube.uid ? '' : '__' + Nube.tab); (porDoc[k] = porDoc[k] || { aud: x.aud, dia, e: [] }).e.push(x); });
+  Object.keys(porDoc).forEach(k => { const g = porDoc[k], u = Nube.uid || 'anon', m = Nube.logs[u] || (Nube.logs[u] = {}), prev = m[k] && Array.isArray(m[k].e) ? copia(m[k].e) : [];
+    g.e.forEach(x => { const ult = prev[prev.length - 1]; if (ult && ult.q === x.q && x.t - ult.t < 6e5) ult.t = x.t; else prev.push({ t: x.t, q: x.q }); });
+    const doc = { aud: g.aud, dia: g.dia, uid: Nube.uid || '', alias: Nube.alias || '', e: prev.slice(-1500) }; m[k] = doc;
+    nubeEscribir(Nube.uid ? Nube.db.doc('log/' + Nube.uid + '/d/' + k) : Nube.db.doc('log_anon/' + k), 'set', copia(doc)); });
+}
+function historial(aud) {
+  const l = []; Object.keys(Nube.logs).forEach(u => Object.values(Nube.logs[u]).forEach(d => { if (!d || d.aud !== aud || !Array.isArray(d.e)) return; d.e.forEach(x => { if (x && x.q) l.push({ t: +x.t || 0, q: String(x.q), uid: u === 'anon' ? '' : u, alias: String(d.alias || '') }); }); }));
+  return l.sort((x, y) => y.t - x.t);
+}
+const quien = x => (x.uid && Nube.nombres[x.uid]) || x.alias || (x.uid && x.uid === Nube.uid ? Nube.nombre || 'Usted' : '') || 'Sin nombre registrado';
+function resolverNombres(l) {
+  const ids = [...new Set(l.map(x => x.uid).filter(u => u && Nube.nombres[u] === undefined))]; if (!ids.length || !Nube.user) return; ids.forEach(u => { Nube.nombres[u] = ''; });
+  Nube.user.profiles(ids).then(ps => { let hubo = false; ids.forEach(u => { const n = ps && ps[u] && ps[u].name; if (n) { Nube.nombres[u] = n; hubo = true; } }); if (hubo) nubePintar(); }).catch(() => { });
+}
+function vistaHistorial(aud, titulo) {
+  const l = historial(aud); resolverNombres(l); const fh = t => { const d = new Date(t); return fLarga(fIso(d)) + ' · ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const per = {}; l.forEach(x => { const n = quien(x); per[n] = (per[n] || 0) + 1; });
+  return cab(titulo, `<button class="bt ch" data-a="miNombre">${ic('lapiz')}Mi nombre en el historial</button>`) +
+    `<div class="g g21"><div class="panel">${l.length ? `<div class="rejc"><table class="rej"><thead><tr><th style="width:170px">Fecha y hora</th><th style="width:26%">Quién</th><th>Qué cambió</th></tr></thead><tbody>${l.slice(0, 400).map(x => `<tr><td class="num apag" style="padding-top:9px;white-space:nowrap">${fh(x.t)}</td><td style="padding-top:9px">${esc(quien(x))}</td><td style="padding-top:9px">${esc(x.q)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="vacio">Todavía no hay cambios registrados. Cada cambio que alguien guarde aparecerá aquí con su nombre, la fecha y la hora.</div>'}</div>
+      <div class="panel ac" style="align-self:start"><h2>Quién ha cambiado algo</h2>${Object.keys(per).sort((x, y) => per[y] - per[x]).map(n => `<div class="mini" style="grid-template-columns:minmax(0,1fr) auto"><span>${esc(n)}</span><span class="num apag">${pl(per[n], 'cambio', 'cambios')}</span></div>`).join('') || '<div class="vacio">Sin registros.</div>'}
+        <div class="sep"></div><div class="apag" style="font-size:13px;line-height:1.5">Cada persona escribe solo su propio historial. Los demás lo pueden leer, pero no modificarlo.</div></div></div>`;
+}
+V.historial = () => vistaHistorial(A().id, 'El historial muestra quién cambió qué y cuándo en esta auditoría');
+V['plan-historial'] = () => vistaHistorial('__anual', 'El historial muestra quién cambió qué y cuándo en el plan anual');
+Object.assign(ACC, {
+  miNombre: () => { ventana(`<h2>Su nombre en el historial</h2><p>${Nube.nombre ? `En el historial aparece como «${esc(Nube.nombre)}», el nombre de su cuenta. Si prefiere otro, escríbalo aquí.` : 'Cada cambio que usted guarde queda en el historial con este nombre.'}</p><form data-f="alias" style="margin-top:14px">${campo('Nombre', '', Nube.alias, { cl: 'md', ph: 'Nombre y cargo' }).replace('data-b=""', 'name="n" autofocus maxlength="60"')}<div class="pie"><button type="button" class="bt fan" data-a="cerrarVentana">Ahora no</button><button class="bt pri">Guardar</button></div></form>`); },
+  compartirAud: () => { cerrarMenu(); const a = A(); confirmar('Compartir «' + esc(a.nombre || 'Auditoría sin nombre') + '»', 'La auditoría pasa a la base compartida del artefacto. La verán y la podrán cambiar las personas a las que usted les dé acceso de edición, y cada cambio quedará en el historial.', 'Compartir', () => { a.nube = true; a.ej = false; guardar(); pintarCab(); pintar(); aviso('Auditoría compartida. Los cambios se guardan para todas las personas con acceso.', 'ok', 7000); }); },
+  compartirPlan: () => { const p = PA(); p.nube = true; p.ej = false; guardar(true); pintar(); aviso('Plan anual compartido.', 'ok'); }
 });
 
 /* ===== Kit de auditoría ágil · demostración guiada y arranque ===== */
@@ -1664,7 +1875,7 @@ function normalizar(a) {
 function montar() {
   $('#raiz').innerHTML = `<div id="fondo"><i></i><b></b></div>
     <div id="app"><header class="cab" id="cab"></header><nav class="ciclo" id="ciclo" aria-label="Etapas de la auditoría"></nav><main></main>
-      <footer class="pie-p"><span class="fi">Laura Lamprea Quiroga</span><a href="https://wa.me/573202068541" target="_blank" rel="noopener" title="WhatsApp">${WA}@lauralampreaquiroga</a><a href="https://www.linkedin.com/in/laura-lamprea-quiroga/" target="_blank" rel="noopener">LinkedIn</a><span class="de">${ic('cand')} La información queda en este computador. Para conservarla o llevarla a otro, use Exportar.</span></footer></div>
+      <footer class="pie-p"><span class="fi">Laura Lamprea Quiroga</span><a href="https://wa.me/573202068541" target="_blank" rel="noopener" title="WhatsApp">${WA}@lauralampreaquiroga</a><a href="https://www.linkedin.com/in/laura-lamprea-quiroga/" target="_blank" rel="noopener">LinkedIn</a><span class="de" id="pieDatos">${ic('cand')} La información queda en este computador. Para conservarla o llevarla a otro, use Exportar.</span></footer></div>
     <div id="velo"></div><aside class="caj" id="caj" aria-label="Detalle"></aside><div id="avisos" aria-live="polite"></div><div id="impr"></div>`;
 }
 function iniciar() {
@@ -1674,13 +1885,14 @@ function iniciar() {
   delete S.aud.__demo;
   const ej = S.aud.ejemplo; if (ej && ej.mod === ej.creado && fIso(new Date(ej.creado)) !== HOY()) S.aud.ejemplo = ejemplo();
   if (!Object.keys(S.aud).length) { const e = ejemplo(); S.aud[e.id] = e; S.act = e.id; }
-  if (!S.aud[S.act]) S.act = Object.keys(S.aud)[0];
+  if (!S.aud[S.act]) { UI.esperaAct = S.act; S.act = Object.keys(S.aud)[0]; }
   S.aud = Object.fromEntries(Object.values(S.aud).map(a => { normalizar(a); return [a.id, a]; })); if (!S.aud[S.act]) S.act = Object.keys(S.aud)[0];
   S.anual = S.anual ? normalizarAnual(S.anual) : anualEjemplo();
   const hh = location.hash.slice(1); UI.vista = V[hh] ? hh : 'inicio';
   ponerTema(); pintarCab(); enlazar();
   if (trae && S.aud[trae]) { const otra = al && S.act !== trae; S.act = trae; pintarCab(); if (otra) setTimeout(() => aviso('Se abrió la auditoría que trae este archivo. Las demás siguen en el menú de auditorías.', 'ok', 8000), 600); }
   const h = location.hash.slice(1); UI.vista = V[h] ? h : 'inicio'; pintar({ entra: true });
+  nubeConectar();
 }
 if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(iniciar); else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 </script>
